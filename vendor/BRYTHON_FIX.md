@@ -5,14 +5,13 @@ from Brython's master of 11 September 2026 plus one hundred and sixty proposed c
 (`metaclass-getattribute-args`, `iterator-setstate` and `getitem-binding` in two, as amended for their PRs) and five merged
 upstream since (#3022, #2996, #2989, #2982, #3125), with **four** edits
 made in the file itself afterwards. The wrapper, the integer format and the
-`__call__` binding carry a `/* SVELTHON patch, see BRYTHON_FIX.md */` comment,
+`__call__` binding carry a `/* BRYNTIME patch, see BRYTHON_FIX.md */` comment,
 the only way to find them again in 1.4 MB; the other edit *is* a comment, so
 `@vite-ignore` finds itself.
 
 **The integer format and the `__call__` binding are edited in the built file
-only**, not in `vendor-base`, so `scripts/vendor-brython.py` drops them:
-re-apply them by hand after a re-vendoring. `tests/vendor.test.js` turns red
-until they are.
+only**, not in `vendor-base`, so a re-vendoring drops them: re-apply them by
+hand after it.
 
 The commits are Brython's own, proposed upstream and carried here while they
 wait, which is what this project has always done rather than hold a fix back.
@@ -26,7 +25,7 @@ written against:
 | `undefined-str-slot` | `UndefinedType` gains the `tp_str` it lacked, so `str()` of a raw JavaScript `undefined` answers instead of raising about a descriptor with no argument |
 | `json-big-integers` | `javascript.JSON` reads and writes an integer past 2^53 with its exact digits, the way the `json` module already did. `stringify` no longer raises on a big integer and `parse` no longer hands back an `int` whose last digits are wrong. Both steps compose with an author's replacer or reviver, and both are skipped where the engine lacks `JSON.rawJSON` or the reviver's source text. `from_json` is this `parse` |
 | `jsobj2pyobj-exponential` | a whole Javascript number above 2^53 crosses to Python as the int it is. It was built from the number's shortest decimal, which is another integer above 2^53 and exponential notation from 1e21 up, where `BigInt()` refused it outright. `to_py` reaches this on any large number coming back from JavaScript |
-| `mark-compiler-chain` | two comments around the parsing chain in the generated `brython.js`, which is what `scripts/vendor-brython.py` cuts on to build `brython_runtime.js` |
+| `mark-compiler-chain` | two comments around the parsing chain in the generated `brython.js`, which is what the vendoring cuts on to build `brython_runtime.js` |
 | `fstring-format-spec-quote` | a quote used as the **fill character** of a format specification is escaped before being pasted into the generated literal. `f"{3:'>5}"` emitted `$B.String(''>5')`, and the generated JavaScript stopped parsing — *missing ) after argument list* — on an expression CPython prints as `''''3`. A string constant reaches the emitter escaped when it came from a source literal and raw when it came from a specification, so the escape is applied only to a quote that has an even number of backslashes before it |
 | `ob-type-name` | a dict key, a module global, an attribute or a local spelled `ob_type` is the author's. A dict keeps its class under a symbol and its string keys as properties, so the key shadowed the field `get_class` reads first: `globals()` raised a JavaScript error once a module bound `ob_type`, and `d["ob_type"] = "business"` left the dictionary answering a string for its own class. `get_class` takes the symbol first when the object holds it itself, so a dict's `ob_type` is data whatever it holds, a class included. A method's frame held its class under the same field for `super()` without arguments, which now reads it from `__class__`, written beside it already, so `locals()`, `vars()` and `dir()` in a method list the method's names and `locals()` has no name to leave out. It replaces the second commit `dict-proto-key` had, which sent the key to the hash table: dicts worked, and an attribute of that name, read through the own-property path, was lost |
 | `get-class-ob-type-class` | a JavaScript object's `ob_type` is its data unless it holds a class: `get_class` took any value there for the class, so `{ob_type: "business"}` failed every attribute read inside the engine. It takes the field only when it holds something with a `tp_name`, the test `call_attr` makes of a class. Written for the merged state of `ob-type-name`, whose `klass` it reads. A getter of that name is still run: reading the field off its descriptor costs 3 to 8 % on crossings and class reads, measured, and is left to a mark by symbol, as a dict has, to propose upstream |
@@ -73,11 +72,11 @@ written against:
 | `identity-before-equality` | `list.index`, `tuple.index` and `list.remove` compared by equality alone, where `in` and `count` test identity first: `x = float("nan"); [x].index(x)` raised `ValueError`, and so did an object whose `__eq__` answers False. They test identity first now |
 | `nan-is-identity` | `$B.$is` answered True for any two NaN floats, so a container comparing its members by identity-or-equality found two distinct NaNs equal: `(float("nan"),) == (float("nan"),)` and `float("nan") in [float("nan")]` were True where CPython says False. Only the same NaN object is itself now |
 | `kw-bundle-symbol` | a call's keyword arguments travel under a symbol, `$B.KW`, and no longer under a `$kw` key. A JavaScript object passed as an argument and carrying `$kw` was taken for them: `f(obj)` raised `unexpected keyword argument '0'`, `dict(obj)` answered `{'0': 'a'}`, and `tojson(to_js({"$kw": …}))` refused its own argument. No argument can carry a symbol key |
-| `pyobj2jsobj-hook` | an extension point: `pyobj2jsobj` asks `$B.pyobj2jsobj_hook` first, and a result other than `undefined` is the conversion. The engine converts the arguments of every JavaScript call it makes with `pyobj2jsobj`, a local nothing outside can replace, so an application embedding Brython had no way to convert a value itself. Svelthon sets it so a Python callable crosses as `pyHandler` publishes it, trimmed to its arity before anything is read, one identity at every crossing, and a Python list, tuple or dict as a named import's arguments cross |
+| `pyobj2jsobj-hook` | an extension point: `pyobj2jsobj` asks `$B.pyobj2jsobj_hook` first, and a result other than `undefined` is the conversion. The engine converts the arguments of every JavaScript call it makes with `pyobj2jsobj`, a local nothing outside can replace, so an application embedding Brython had no way to convert a value itself. Bryntime sets it so a Python callable crosses as `pyHandler` publishes it, trimmed to its arity before anything is read, one identity at every crossing, and a Python list, tuple or dict as a named import's arguments cross |
 | `callable-instance-to-js` | `pyobj2jsobj` converts an instance of a class defining `__call__` into a JavaScript function, as it does a function and a method. It handed the object over, so `window.call(C())` raised `f is not a function` |
 | `bound-method-js-identity` | `pyobj2jsobj` keeps one JavaScript function per bound method, keyed on its instance and function. A bound method is a new object at each read, and the cache was on that object, so `same(h.run, h.run)` was false and `removeEventListener(h.run)` never removed what `addEventListener(h.run)` added |
 | `js-method-receiver-cache` | the Python function made for a JavaScript method is kept in a WeakMap keyed on its receiver rather than in a property written on it. A frozen, sealed or non-extensible receiver refused the property, so every read of `box.run` made a new function and a registry could not remove what it had been given |
-| `pyobj2jsobj-graph` | the arguments of one JavaScript call are converted with one memo, and a list or dict is registered in it before its items are walked. `same(rows, rows)` handed over two arrays, and `rows.append(rows)` overflowed the stack. The memo is handed to the hook as its second argument, which is how Svelthon's conversion keeps the same graph |
+| `pyobj2jsobj-graph` | the arguments of one JavaScript call are converted with one memo, and a list or dict is registered in it before its items are walked. `same(rows, rows)` handed over two arrays, and `rows.append(rows)` overflowed the stack. The memo is handed to the hook as its second argument, which is how Bryntime's conversion keeps the same graph |
 | `callable-type-slot` | `callable()` asks the type's `tp_call`, the slot `$B.$call` uses, instead of `hasattr(obj, "__call__")`. An object whose `__getattr__` answers every name, or one given a `__call__` attribute of its own, was callable, so a configuration object crossed to JavaScript as a function and `tojson` refused it as a call |
 | `json-parse-str-subclass` | `javascript.JSON.parse` reads a subclass of str by its value. It was handed to `JSON.parse` as the object Brython keeps it in, so `JSON.parse(Text('{"answer": 42}'))` raised `"[object Object]" is not valid JSON`. `from_json` is this `parse` |
 | `bases-set-subclass-mro` | a class given new bases, `C.__bases__ = (B,)`, reorders its subclasses too, where only the class itself was: `D(C)` kept finding the name on `C`'s old base. An assignment a subclass's order refuses leaves every class as it was |
@@ -138,7 +137,7 @@ written against:
 | `init-subclass-classmethod` | an `__init_subclass__` written in a class body is a classmethod, as `__class_getitem__` already was: `vars(C)["__init_subclass__"]` was a function, and `C.__init_subclass__` a function not bound to `C` |
 | `super-type-no-instance` | a `super()` whose second argument is its own start type hands what it finds no instance: `super(C, C).prop` is the property, where its getter ran with the class as `self`, `super(C, C).method` the function, where it was bound to the class, and `super(C, C).__dict__` the descriptor. On `init-subclass-classmethod`, which the class statement's own `super()` call relied on |
 | `slots-no-dict-descriptor` | a class whose `__slots__` leave out `'__dict__'` gets no `__dict__` descriptor, so its instance raises `AttributeError` for `__dict__`, where it answered a JavaScript `undefined` |
-| `vars-dict-attribute` | `vars(obj)` reads the `__dict__` attribute, where it read the engine's dictionary: `vars(C)` of a class is its mappingproxy, where it was a dict anyone could write the class through, and a read of a class's names through `vars()` is a read Svelthon follows. On `slots-no-dict-descriptor`, without which `vars()` of a slotted instance answered `undefined` |
+| `vars-dict-attribute` | `vars(obj)` reads the `__dict__` attribute, where it read the engine's dictionary: `vars(C)` of a class is its mappingproxy, where it was a dict anyone could write the class through, and a read of a class's names through `vars()` is a read Bryntime follows. On `slots-no-dict-descriptor`, without which `vars()` of a slotted instance answered `undefined` |
 | `dict-has-own-property-key` | a dict asks its own properties through `Object.hasOwn`, where `self.hasOwnProperty(key)` called the value of a key `"hasOwnProperty"` and raised a JavascriptError, a class with such an attribute included |
 | `attribute-has-own-property` | an attribute lookup asks the instance's dict through `Object.hasOwn`, where `own_dict.hasOwnProperty(attr)` raised for an instance or a function holding an attribute `hasOwnProperty`. On `dict-has-own-property-key`, through which the attribute is written |
 | `dict-literal-big-hash` | the hash the compiler writes for a constant key of a dict display is a BigInt when it is one, where it was written as a number rounded past 2 ** 53: `{1.5: 2.5}[1.5]` raised KeyError |
@@ -153,29 +152,12 @@ written against:
 | `pattern-keyword-has-own-property` | a class pattern's keywords are asked through `Object.hasOwn`, where `case P(1, hasOwnProperty=2)` raised a JavascriptError |
 | `unpacked-keyword-inherited-name` | a keyword unpacked into a builtin is told given twice by `Object.hasOwn`, where `kwa[key] !== undefined` found `constructor`, `toString` or `valueOf` on `Object.prototype`: `'{x}'.format(**{'constructor': 2}, x=1)` raised `got multiple values` |
 
-The first one reaches Svelthon at `importjs`: a value handed to a JavaScript
-function, or handed back by one, crosses through `pyobj2jsobj` and
-`jsobj2pyobj`. `__pybridge.bound` still does its own `None` to `undefined` at
-the template boundary, measured: removing it turns seven tests red on the paired
-engine, because a template expression does not cross the engine's converter.
-`plainData` still writes `null`, and that is not the same question: it serves
-what SvelteKit *serialises*, and JSON has `null` and no `undefined`.
-
 It used to be ten. Eight went upstream, one branch each, and the re-vendoring of
 2026-09-11 took them back as ordinary Brython:
 `filename-invalid-identifier-chars`, `comprehension-leaks-target`,
 `fstring-middle-position`, `remove-jsclass-getattro-debug-log`,
 `pyobj-backref-weakmap`, `to-dict-array-to-list`, `expose-unindent`,
 `find-start-position`.
-
-They used to be split: three in the file, two applied as Vite served it. That
-split had a hole, and it was not theoretical. The served copy is the *browser's*;
-the compiler loads the same file with `require` under Node, where no Vite
-transform applies, so server-side rendering ran on an unrepaired Brython. It
-worked only for as long as the served copy re-executed on top, which stopped
-being true the day that second execution was guarded. `/api/py` in the demo, an
-endpoint that builds its own `Response`, then returned 500 with
-`Key Symbol(PYOBJ) in undefined.headers`.
 
 | Still edited in place | What it buys |
 |---|---|
@@ -205,96 +187,3 @@ while changing the top-level shape of the file for everyone.
 `/* @vite-ignore */` is a comment addressed to **one bundler**. It means nothing
 to esbuild, to Rollup on its own, or in a browser. A build tool's annotation has
 no place in an engine that is not built with it.
-
-### How they are guarded
-
-A direct edit is lost silently when a newer Brython is vendored, and so is a
-behaviour, whether we sent it upstream or not. Each is held by a **test** rather
-than by a build-time check, and going upstream retires none of them:
-
-| Behaviour | Turns red |
-|---|---|
-| `qualified_scope_name`, `make_comp`, the tokenizer | `tests/compiler.test.js`, `tests/fidelity.test.js` |
-| the two debug prints, the `PYOBJ` back-reference, `str.find`, the integer format, the `__call__` binding, the conversion hook | `tests/vendor.test.js`, and `tests/import-members.test.js` for the hook's behaviour |
-| `convert_to_python` | `tests/from-json.test.js`, where an array that stayed one fails `isinstance(x, list)` |
-| the file wrapper, the two `@vite-ignore` | `tests/vendor.test.js`, the last two tests |
-| the id counter, `$B.id_counter` | `tests/vendor.test.js`, and `tests/compile-determinism.test.js` if it stops holding the output |
-| the keyword symbol, `$B.KW` | `tests/vendor.test.js`, and `tests/helper-keywords.test.js` for a JavaScript object with a `$kw` key |
-| `jsobj2pyobj` reads `then` by its descriptor (branch `jsobj-then-getter`) | `tests/vendor.test.js`, a `then` getter not run on crossing |
-| an int is never a negative zero: `round`, `int`, `__floor__`, `__ceil__` of a float and `-0` (branch `int-negative-zero`) | `tests/vendor.test.js`, five ints made at zero |
-| a module global deleted through `globals()` reads as unbound, `NameError` or the builtin it shadowed (branch `global-deleted-at-run-time`) | `tests/vendor.test.js`, a global and a builtin popped |
-| a t-string field ending with a name, `t"Hello {name}"`, compiles: its closing brace carries the expression text the parser reads, which it lacked on that path and only that one (branch `tstring-field-ending-in-name`) | `tests/vendor.test.js`, `template_strings.py` compiles |
-| the attributes of a t-string `Interpolation`, `value`, `expression`, `conversion` and `format_spec`, are readable, as `Template`'s already were (branch `tstring-interpolation-members`) | `tests/vendor.test.js`, an interpolation read |
-| the format specification of an interpolation is kept: the node factory was called without its position, so the specification was taken for it, `t"{x:.2f}"` had no interpolation and `t"{x:{w}}"` raised (branch `tstring-format-spec`) | `tests/vendor.test.js`, the rows of `t-strings as CPython has them`, one per branch |
-| the `expression` of an interpolation is its source text, trailing spaces and `=` stripped from the end, where it was the name read off the value, `'undefined'` for `{1 + 2}` (branch `tstring-expression-text`, on top of `tstring-format-spec`) | the same |
-| a t-string ending with an interpolation ends its `strings` with an empty one (branch `tstring-trailing-string`) | the same |
-| `Template(...)` takes `Interpolation` objects, joins consecutive strings and refuses anything else (branch `tstring-template-new`, on top of `tstring-trailing-string`) | the same |
-| the repr of a `Template` is CPython's, `Template(strings=(...), interpolations=(...))` (branch `tstring-template-repr`) | the same |
-| two templates concatenate, the last string of one joined to the first of the other (branch `tstring-template-concat`) | the same |
-| `Template` and `Interpolation` carry CPython's type flags and dotted names, so `type(t"")` names `string.templatelib` once (branch `tstring-type-names`) | the same |
-| the `__name__` and `__qualname__` of a builtin type named `module.name` are `name` (branch `dotted-type-name`) | the same |
-| `Interpolation(value, expression)` called from Python takes the defaults of its signature (branch `tstring-interpolation-defaults`) | the same |
-| `Interpolation.__match_args__`, through a `tp_match_args` slot that finalization writes into the class (branch `tstring-match-args`) | the same |
-| a template is iterated by a `TemplateIter` of its own, so `list()` works and two iterations do not share a counter (branch `tstring-template-iter`) | the same |
-| a t-string nested in an f-string leaves the f-string an f-string: the kind of each open string is kept with it (branch `tstring-nested-in-fstring`) | `tests/vendor.test.js`, `template_nested.py` imported alone |
-| `help` is the builtin function again, not the string `'type help()'` that replaced it in the builtins module, so `help(obj)` prints the docstring rather than raising `'str' object is not callable` (branch `help-is-callable`) | `tests/vendor.test.js`, `callable(help)` |
-| an invalid f-string conversion, `f"{x!z}"`, raises its `SyntaxError` with its message, which was passed in place of the parser and read as `undefined` (branch `fstring-conversion-message`) | `tests/vendor.test.js`, syntax errors as CPython raises them |
-| bytes concatenated with a string, `b"a" "b"`, raises `cannot mix bytes and nonbytes literals`: its location was read off token fields the AST nodes do not have (branch `bytes-str-concat-message`) | the same |
-| `from __future__ import braces` and an unknown future feature raise their `SyntaxError`, through `$B.raise_error_known_location`, where a local function of that name no longer exists (branch `future-import-errors`) | the same |
-| more than 200 nested brackets raise `too many nested parentheses` in the tokenizer, before the parser recurses past the stack (branch `too-many-nested-parentheses`) | the same |
-| the label of a debug field followed by a conversion, `f"before:{x=!s}"`, starts at the field and not at the f-string's second character (branch `fstring-debug-conversion-label`) | `tests/vendor.test.js` |
-| the label of a debug field holding an f-string, `f"{f'{x=}'=}"`, is the whole field: the inner f-string no longer leaves the start of its own field behind (branch `fstring-debug-nested-label`) | the same |
-| the label's node ends where its text does, past the `=` and the spaces after it, as CPython places it, where it ran a character into the `!`, the `:` or the `}` (branch `fstring-debug-label-end`) | the same |
-| a list, set or dict comprehension binds its names in a scope of its own, as a generator expression does: they were set in the enclosing namespace, where `globals()` saw them and a name's accessor took the write, then deleted, which left a function made in the comprehension reading `undefined` (branch `comprehension-own-scope`) | `tests/vendor.test.js`, and `tests/js-import-bindings.test.js`, a comprehension over a name JavaScript imports |
-| an `await` in a comprehension written in a block of an async function belongs to that function, where the comprehension's own scope made it "outside function" (third commit of branch `comprehension-own-scope`) | `tests/vendor.test.js` |
-| a comprehension holding an `await` is awaited where it is written, where it handed back a Promise (branch `comprehension-await`, on `comprehension-own-scope`) | the same, in a module and in `on_mount` |
-| a JavaScript symbol is hashable, a key of a dict or a member of a set, where its hash was set as a property it cannot hold; its hash is kept in a WeakMap, so it does not keep the symbol alive (branch `symbol-hash`, two commits) | the same, `tests/unpack-by-key.test.js`, the rest of a row keeping a symbol, and `tests/callback-retention.test.js` |
-| a row too short for a starred target says it needs as many values as the names beside the star, `first, *middle, last = [1]` at least 2, where it counted the names after the star twice (branch `starred-unpack-expected-count`) | the same, and `tests/rest-targets.test.js`, whose template unpacks with the engine's own routine |
-| a dict key, a module global, an attribute or a local spelled `ob_type` is the author's, where `globals()` raised once a module bound the name and `locals()` left it out; `super()` reads a method's class from `__class__` (branch `ob-type-name`) | the same, a method's `locals()`, `vars()` and `super()` included; `tests/spread-entries.test.js` and `tests/crossing-numeric-keys.test.js`, a dict keyed `"ob_type"` spread and exported |
-| a builtin method that takes no arguments refuses any in its type's name, `list.clear() takes no arguments (1 given)`, where it counted its instance, took the argument in silence or named another method (branch `noargs-method-arity`) | `tests/vendor.test.js` |
-| `list.sort` refuses a positional argument with `sort() takes no positional arguments`, and its text signature says it takes keywords only (branch `list-sort-keyword-only`) | `tests/vendor.test.js`, and `tests/native-noargs-callbacks.test.js`, `onclick={rows.sort}` |
-| a module name holding a quote leaves its defs, lambdas, classes and comprehensions parseable (branch `module-name-quote-literals`) | the same, and `tests/source-path.test.js`, four paths with a quote, a double quote or a backslash |
-| a generator function called from JavaScript while no Python frame runs, an async one too, runs (branch `generator-called-from-javascript`) | `tests/vendor.test.js`, and `tests/synced-exports.test.js`, a set subclass whose `__iter__` yields, walked by JavaScript |
-| an `__iter__` returning no iterator is refused as a `non-iterator` (branch `iter-non-iterator-message`) | `tests/vendor.test.js`, and `tests/synced-exports.test.js`, the same refusal reaching JavaScript |
-| `globals()` and `locals()` refuse an argument as CPython words it, a keyword included (branches `no-arguments-message`, `locals-no-keyword-arguments`) | `tests/vendor.test.js`, at the top of a module and in a function |
-| a builtin given a wrong number of arguments says `exactly one argument` or `expected 2 arguments, got 1`, and a method does not count its instance (branch `nb-args-messages`) | `tests/vendor.test.js`, and `tests/native-noargs-callbacks.test.js`, `list.append` handed every argument of a JavaScript callback |
-| a memoryview reads an item from the end, refuses a write out of it or of a value no byte holds, refuses all once released, and a slice of it reads and writes the same buffer (master's `18571ba0d`, branches `memoryview-index-error`, `memoryview-released`, `memoryview-slice-shares`) | `tests/vendor.test.js`, and `tests/buffer-view.test.js`, a slice repainted with what `python3` reads |
-| a builtin held as `__call__` is called without the instance, and a number has its `conjugate()` (branches `call-builtin-unbound`, `int-conjugate`, `float-conjugate`) | `tests/vendor.test.js`, and `tests/callable-matrix.test.js`, an instance whose `__call__` is a bound builtin crossing to JavaScript |
-| an identifier is read in its NFKC form, a string is not (branch `identifier-nfkc`) | `tests/vendor.test.js`, and `tests/normalized-names.test.js`, a ligature and a decomposed accent in the markup |
-| a method descriptor called through its type refuses a receiver of another type (branch `method-descriptor-receiver`) | `tests/vendor.test.js` |
-| a metaclass's `__getattribute__` is called with the class and the name, and a subscript never asks it (branches `metaclass-getattribute-args`, `item-dunder-mro-lookup`) | `tests/vendor.test.js`, and `tests/dot.test.js`, a mapping whose metaclass hides `__getitem__`, written through a binding |
-| a set made from a JavaScript array holds Python floats, and one made from a list subclass holds what its `__iter__` yields (branch `set-update-iterates`) | `tests/vendor.test.js`, and `tests/synced-exports.test.js`, a set's walk over floats a JavaScript caller handed in |
-| a JavaScript array answers a list's methods and a plain object a dict's, a `Map` keeping its `get` (branches `js-array-list-methods`, `plain-jsobject-mapping`) | `tests/vendor.test.js`, and `tests/js-parent-data.test.js`, a Python child reading what a Svelte parent hands it |
-| a JavaScript `Set`'s items are converted, and `NULL` and `UNDEFINED` hash as `None` does and are refused as a subscript (branches `js-iterable-converts-items`, `null-undefined-hash`, `getitem-null-item`) | `tests/vendor.test.js` |
-| a function read off a JavaScript object is not asked its own `toString` (branch `jsobj-function-tostring`) | `tests/vendor.test.js`, and `tests/snippet-arguments.test.js`, a Python snippet kept in a JavaScript object, in development mode |
-| sorting compares with `<` alone (branch `sort-less-than-only`) | `tests/vendor.test.js` |
-| a stack overflow taken for a `RecursionError` is not logged (branch `recursion-error-unlogged`) | `tests/vendor.test.js` |
-| `repr()` goes as deep as the stack (branch `repr-deep-nesting`, #3125) | `tests/vendor.test.js` |
-| lists and tuples compare their items from the first (branch `list-eq-left-to-right`) | `tests/vendor.test.js`, and `tests/each-computed-rows.test.js`, an `{#each}` over `sorted(d.items())` not computed again on a change inside a row |
-| a JavaScript object's `ob_type` is its data unless it holds a class (branch `get-class-ob-type-class`) | `tests/vendor.test.js`, and `tests/unpack-by-key.test.js`, a record keeping a field `ob_type` read by the dot, its method run with the record as `this` |
-| an unhashable value is named by its type, and a set element or a dict key says what it was refused as (branches `unhashable-type-name`, `unhashable-element-context`, `unhashable-dict-key-context`) | `tests/vendor.test.js`, and `tests/synced-exports.test.js`, a write into a set's view refused and caught by the Python caller |
-| a class is listed under the bases it has, implicit `object` included, held weakly (master's `655352e85`, #2982, branches `bases-set-moves-subclass`, `subclasses-held-weakly`) | `tests/vendor.test.js` |
-| a class given new bases reorders its subclasses (branch `bases-set-subclass-mro`) | `tests/vendor.test.js`, and `tests/inherited-state.test.js`, a subclass read repainted after `C.__bases__ = (B,)` |
-| new bases CPython refuses leave the class as it was, and new bases bring their special methods (branches `bases-set-validates`, `bases-set-resets-slots`) | `tests/vendor.test.js` |
-| a class refuses a base written twice, builtins laid out apart, bases with no MRO in CPython's words, and slot names CPython refuses (branches `mro-duplicate-base`, `solid-base-builtin-layout`, `mro-error-message`, `slots-class-variable-conflict`, `slots-variable-size-base`, `slots-valid-identifiers`) | `tests/vendor.test.js` |
-| code from `compile()` runs where its tree leaves a field out (branch `compile-ast-optional-none`) | `tests/vendor.test.js`, in the compiler's engine |
-| a loop over a str runs in a strict module, a str subclass iterates, `str()`, `repr()` and a stepped slice keep astral and combining characters, a descriptor's setters return None, and `__slots__` takes a str subclass, keeps a single name, and refuses a slot whose descriptor is gone (branches `for-loop-inum`, `str-subclass-iteration`, `str-keeps-its-characters`, `str-slice-step-astral`, `descriptor-set-returns-none`, `slots-str-subclass`, `slots-valid-identifiers`, `slot-deleted-descriptor`) | `tests/vendor.test.js`, each answer computed apart, and `tests/slot-attributes.test.js`, a slot written through its descriptor repainting |
-| str methods read a str subclass, count an astral character once in positions and lengths, `center()` pads as CPython, `float()` reads a str subclass, `print()` writes astral text, and a class keeps its hooks, its `__dict__`, its `__set_name__` calls and its methods' `__qualname__` (branches `str-subclass-arguments`, `str-astral-positions`, `str-astral-results`, `str-center-margin`, `float-str-subclass`, `write-str-check`, `class-getitem-raw-key`, `classmethod-hook-function`, `class-dict-kept`, `set-name-every-key`, `method-qualname-kept`) | `tests/vendor.test.js`, each answer computed apart |
-| a bytes iterator keeps its position, a bytearray iterator reads the current size, `translate()` propagates its table's errors and refuses what it cannot use, `maketrans()` reads astral characters (branches `bytes-iterator-keeps-position`, `bytearray-iterator-live-length`, `str-translate-errors`, `str-maketrans-astral`, and `iterator-length-hint`, `iterator-setstate` for what remains and where an iterator is put) | `tests/vendor.test.js`, each answer computed apart |
-| the console's `write()` returns the number of characters written (branch `write-returns-count`) | `tests/vendor.test.js`, through the runtime's stdout |
-| the engine's copy of a list is not mapped back to the list (branch `list-copy-not-mapped`) | `tests/vendor.test.js`, with the runtime's hook set aside |
-| `hasattr()` lets errors through, a dict subclass copies and updates by its protocol, `round()` is exact, `isinstance()` reads a proxy's class and refuses a list, an iterator state is an int, `__slots__` cannot ask twice for a `__dict__` (branches `hasattr-attribute-error`, `dict-subclass-copy`, `dict-update-arg`, `round-exact`, `isinstance-reported-class`, `isinstance-list-refused`, `iterator-setstate`, `slots-marker-redeclared`) | `tests/vendor.test.js`, each answer computed apart |
-| a `__getitem__` iterator keeps its position, `__getitem__` is bound, `enumerate` counts from an index, a builtin iterator's subclass makes its own instances, `zip()` is empty, str and bytes searches keep to their bounds (branches `sequence-iterator-position`, `getitem-binding`, `enumerate-start`, `builtin-iterator-subclass`, `zip-no-argument`, `str-search-bounds`, `bytes-search-bounds`) | `tests/vendor.test.js`, each answer computed apart |
-| a class statement that raises leaves its frame, `__slots__` asks for a `__dict__` against the base that sets the layout, the slot markers do not fix a layout, and a bytes search lets an `__index__` error through (branches `class-frame-left`, `slots-marker-redeclared`, `solid-base-slot-markers`, `bytes-search-bounds`) | `tests/vendor.test.js`, each answer computed apart |
-| a method-wrapper compares and hashes by its function and its receiver (master's `e2e990dd6`, #2989) | `tests/vendor.test.js`, and `tests/method-identity.test.js`, `box.__setattr__` read twice through the runtime's wrapper |
-| the `__dict__` attribute is read as Python reads it, through `vars()`, on a slotted instance and through `super(C, C)`, and `__init_subclass__` is a classmethod (branches `init-subclass-classmethod`, `super-type-no-instance`, `slots-no-dict-descriptor`, `vars-dict-attribute`) | `tests/vendor.test.js`, and `tests/oracle-attributes.test.js`, the model and the page held against CPython |
-| a dict keyed by `"hasOwnProperty"` and an attribute of that name answer, a float key of a dict display is found, a str key taken out of a dict with other keys is gone, a lookup after `popitem()` finds what is there, and `list()`, `max()`, `dict()` and `bytes()` iterate a list subclass (branches `dict-has-own-property-key`, `attribute-has-own-property`, `dict-literal-big-hash`, `dict-str-key-removed`, `dict-lookup-after-popitem`, `list-subclass-iter`, `min-max-subclass-iter`, `dict-pair-subclass-iter`, `bytes-subclass-iter`) | `tests/vendor.test.js`, each answer computed apart |
-
-`scripts/browser-check.sh` covers the DOM node path as well, which is where
-identity across the boundary is observable.
-
-The back-reference is read from Svelthon under **Brython's** name for it,
-`$B.PYOBJ_MAP`, in `src/lib/bryntime/core.js`. While the WeakMap was a local edit it
-was called `$B.$svelthonPyobj`, and the read is written with `?.`, so the
-re-vendoring would have turned it into `undefined` without a word. What caught
-it is the test that names the map, not the code that uses it.
