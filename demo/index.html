@@ -7,9 +7,25 @@
         <style>
             body {
                 font: 16px/1.5 system-ui, sans-serif;
-                max-width: 40rem;
+                max-width: 64rem;
                 margin: 2rem auto;
                 padding: 0 1rem;
+            }
+            /* The controls above the list and the copy beside it, so nothing
+               moves when the list grows or an error is shown. */
+            main {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                gap: 2rem;
+                align-items: start;
+            }
+            @media (max-width: 48rem) {
+                main {
+                    grid-template-columns: minmax(0, 1fr);
+                }
+            }
+            ul {
+                padding: 0;
             }
             li {
                 list-style: none;
@@ -21,11 +37,15 @@
             }
             #error {
                 color: #b00020;
+                min-height: 1.5em;
+                margin: 0.25rem 0 0;
             }
             pre {
                 background: #f4f4f4;
                 padding: 0.75rem;
-                overflow-x: auto;
+                margin: 0;
+                max-height: 70vh;
+                overflow: auto;
             }
         </style>
     </head>
@@ -37,26 +57,32 @@
             <code>Set</code>, writes into them, calls Python's functions, and is told of every change,
             whichever side made it.
         </p>
-        <p>
-            Show
-            <button data-show="all">all</button>
-            <button data-show="todo">to do</button>
-            <button data-show="done">done</button>
-            <span>(Python rebinds <code>show</code>)</span>
-        </p>
-        <ul id="todos"></ul>
-        <p><span id="left"></span> left, as Python's <code>remaining()</code> counts them.</p>
-        <form id="add">
-            <input name="task" placeholder="A new task" />
-            <button>Add, in Python</button>
-            <span id="error"></span>
-        </form>
-        <p>
-            <button id="clear-done">Clear done tasks: <code>del todos[i]</code></button>
-            <button id="clear-all">Clear all: <code>todos = []</code></button>
-        </p>
-        <p>The same list, copied out for <code>JSON.stringify</code>:</p>
-        <pre id="json"></pre>
+        <main>
+            <section>
+                <p>
+                    Show
+                    <button data-show="all">all</button>
+                    <button data-show="todo">to do</button>
+                    <button data-show="done">done</button>
+                    <span>(Python rebinds <code>show</code>)</span>
+                </p>
+                <form id="add">
+                    <input name="task" placeholder="A new task" />
+                    <button>Add, in Python</button>
+                    <p id="error"></p>
+                </form>
+                <p>
+                    <button id="clear-done">Clear done tasks: <code>del todos[i]</code></button>
+                    <button id="clear-all">Clear all: <code>todos = []</code></button>
+                </p>
+                <p><span id="left"></span> left, as Python's <code>remaining()</code> counts them.</p>
+                <ul id="todos"></ul>
+            </section>
+            <section>
+                <p>The same list, copied out for <code>JSON.stringify</code>:</p>
+                <pre id="json"></pre>
+            </section>
+        </main>
         <script type="module" src="./main.js"></script>
     </body>
 </html>

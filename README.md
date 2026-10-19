@@ -6,6 +6,12 @@ Brython runs Python in the browser. Bryntime is what a JavaScript framework,
 or a page with none, needs on top of it to use Python's values as its own: to
 read them, to write them, to call them, and to know when they change.
 
+Install it from [npm](https://www.npmjs.com/package/bryntime):
+
+```sh
+npm install bryntime
+```
+
 ```js
 import { viewOf, track, pyExport } from 'bryntime';
 
