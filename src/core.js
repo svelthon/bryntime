@@ -133,9 +133,8 @@ export const pyScalar = (value) => {
     // under a symbol of its own, as it marks a dict already (`$B.OB_TYPE`). That
     // is Brython's to give, a proposal to make upstream, not ours to infer. So
     // the contract: a value carrying a Brython class under `ob_type` **is** that
-    // value here, which `tests/helpers.test.js` pins, and an `ob_type` getter of
-    // a JavaScript object runs when Python reads one of its attributes, which
-    // `tests/unpack-by-key.test.js` says.
+    // value here, and an `ob_type` getter of a JavaScript object runs when
+    // Python reads one of its attributes, both pinned by `tests/crossings.test.js`.
 
     const mro = type.tp_mro;
 
@@ -783,7 +782,7 @@ export function pyData(value, made, live = false) {
     // already crossed `inbound`, so `jsobj2pyobj` gives the same
     // object back and the line above returns first. A mutation sweep says so:
     // inverting the test below calls `null()` on every conversion and no test
-    // can tell, because no reachable input gets here. `tests/to-py.test.js`
+    // can tell, because no reachable input gets here. `tests/crossings.test.js`
     // covers what an author can actually write.
     const toDict = $B.$getattr(python, 'to_dict', null);
 

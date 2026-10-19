@@ -1,7 +1,7 @@
 {
   "name": "bryntime",
-  "version": "0.5.0",
-  "description": "Python and JavaScript reading each other's values in a page, on Brython's engine, behind one door a framework answers through a host",
+  "version": "0.9.0",
+  "description": "The Brython runtime for JavaScript frameworks",
   "author": "Florent Gallaire <fgallaire@gmail.com>",
   "license": "BSD-3-Clause",
   "repository": {

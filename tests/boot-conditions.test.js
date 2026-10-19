@@ -2,8 +2,8 @@
 //
 // The condition, not just the cleanup.
 //
-// `ssr.test.js` asserts that Brython's DOM stubs are gone after the bootstrap,
-// and they are. What nothing asked is whether they go **under the right
+// Brython's DOM stubs are gone after the bootstrap on a server, and a server's
+// rendering depends on it. What nothing asked is whether they go **under the right
 // condition** — and the condition is the whole point of the block, which exists
 // to leave a real browser's globals alone. Measured by mutation: turn either
 // `&&` in `boot.js:37` and `:39` into `||` and not one test in the suite
@@ -13,7 +13,7 @@
 //
 // Three scenarios, one child process each, because the decision runs once per
 // process and reads a set recorded before Brython loads. The server case is the
-// witness: it is what `ssr.test.js` already holds, and if it ever goes green
+// witness: it is what a server's rendering holds, and if it ever goes green
 // while the other two do, the bench is measuring nothing.
 import { test, expect, describe } from 'vitest';
 import { execFileSync } from 'node:child_process';

@@ -992,7 +992,7 @@ export const outbound = (value, made) => {
 // instead, which reads no mark and gives none back. The adapter forwards every
 // property, and going back out to JavaScript it is the function itself again
 // (`pyHandler`): SvelteKit's `query()` returns a function carrying `__.type`,
-// and `accepted = query(_accepted)` in a `.remote.py` exports the object
+// and `accepted = query(_accepted)` in a remote module exports the object
 // SvelteKit built.
 //
 // Except a function Python handed out (`PUBLISHED`), which comes back as the
@@ -1202,7 +1202,7 @@ export function pyExport(value, where) {
     //
     // Asked as `declared`, which reads the signature Python recorded, and not as
     // `callable`: a function JavaScript built and a Python name published,
-    // `accepted = query(_accepted)` in a `.remote.py`, must cross as the object
+    // `accepted = query(_accepted)` in a remote module, must cross as the object
     // its library made, marks included. `declared` answers null for it, and
     // the adapter Python held it through gives it back.
     if (declared(value) !== null || ADAPTERS.has(value)) return exported(value);

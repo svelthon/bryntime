@@ -128,3 +128,40 @@ describe('a JavaScript value copied in, for Python', () => {
         }
     });
 });
+
+// `ob_type` is the engine's marker and an ordinary key, so a JavaScript object
+// can carry one. Holding data there is data; holding a real Brython class
+// cannot be told from the genuine article without a mark of the engine's own
+// on what it made, which is upstream's to give (`core.js`, beside `pyScalar`).
+describe('a key called ob_type', () => {
+    test('holding data is data', () => {
+        expect(plainData({ ob_type: 'business', value: 42, label: 'kept' })).toEqual({
+            ob_type: 'business',
+            value: 42,
+            label: 'kept'
+        });
+    });
+
+    // Its own `label` is lost, because what it says it is has no room for one.
+    // The row exists so the next reader meets the limit here and not in a page.
+    test('holding a Brython class is taken at its word', () => {
+        expect(plainData({ ob_type: $B.builtins.float, value: 42, label: 'kept' })).toBe(42);
+    });
+
+    // Reading it off the descriptor instead costs 3 to 8 % on crossings and
+    // class reads, measured, so the engine reads the field as it reads its own.
+    test('as a getter, is run when Python reads an attribute of the object', () => {
+        let reads = 0;
+        const row = Object.defineProperty({ x: 1 }, 'ob_type', {
+            enumerable: true,
+            get: () => {
+                reads += 1;
+                return undefined;
+            }
+        });
+        const x = python('def x(row):\n    return row.x\n')('x');
+
+        expect($B.$call(x, row)).toBe(1);
+        expect(reads).toBeGreaterThan(0);
+    });
+});

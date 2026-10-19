@@ -7,7 +7,7 @@
 // lived. Nor a dict's view of the keys that left the dict: its names are kept
 // by place, not by key, where the keys of its last read stayed alive after a
 // clear from Python. One child process under `--expose-gc`, skipped where a
-// sandbox forbids spawning, like `context-retention.test.js`.
+// sandbox forbids spawning, like `boot-conditions.test.js`.
 import { test, expect } from 'vitest';
 import { execFileSync } from 'node:child_process';
 

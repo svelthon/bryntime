@@ -35,8 +35,7 @@ test('linking a child shared by n containers grows with n', () => {
 
         return performance.now() - start;
     };
-    // The best of three runs, from a size whose run lasts tens of milliseconds,
-    // as the walks of a set are measured (`synced-exports.test.js`).
+    // The best of three runs, from a size whose run lasts tens of milliseconds.
     const best = (n) => Math.min(run(n), run(n), run(n));
     let n = 1000;
 
