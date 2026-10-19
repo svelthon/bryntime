@@ -314,6 +314,103 @@ value = Account()
     });
 });
 
+// A name its class reads itself, by a property or a descriptor of the author's
+// that Python's lookup runs ahead of the instance's dictionary, which holds the
+// name too: the view describes it as an accessor, as JavaScript describes a
+// getter. Listing the keys, describing them or asking for one reads nothing; a
+// copy reads it once. Described as the value read, they ran the getter, and a
+// copy ran it twice, a getter that raises raising where nothing was read.
+describe('an instance whose class reads an attribute itself', () => {
+    const fresh = python(`
+class Box:
+    def __init__(self, mode):
+        self.__dict__["value"] = 7
+        self.reads = 0
+        self.mode = mode
+    @property
+    def value(self):
+        self.reads += 1
+        if self.mode == "raising":
+            raise ValueError("read")
+        return self.reads if self.mode == "changing" else self.__dict__["value"]
+    @value.setter
+    def value(self, given):
+        self.__dict__["value"] = given
+
+class Descriptor:
+    def __get__(self, obj, cls=None):
+        obj.reads += 1
+        if obj.mode == "raising":
+            raise ValueError("read")
+        return obj.reads if obj.mode == "changing" else obj.__dict__["value"]
+    def __set__(self, obj, given):
+        obj.__dict__["value"] = given
+
+class Described:
+    value = Descriptor()
+    def __init__(self, mode):
+        self.value = 7
+        self.reads = 0
+        self.mode = mode
+
+def fresh(kind, mode):
+    return Box(mode) if kind == "property" else Described(mode)
+`)('fresh');
+
+    // JavaScript's own: an enumerable getter, which counts and raises alike.
+    const native = (mode) => {
+        const box = {};
+
+        Object.defineProperty(box, 'value', {
+            get() {
+                box.reads += 1;
+                if (mode === 'raising') throw new Error('read');
+                return mode === 'changing' ? box.reads : 7;
+            },
+            set() {},
+            enumerable: true,
+            configurable: true
+        });
+        box.reads = 0;
+        box.mode = mode;
+
+        return box;
+    };
+
+    const traced = (box, operation, reads) => {
+        let answer;
+        let raised = false;
+
+        try {
+            answer = operation(box);
+        } catch {
+            raised = true;
+        }
+
+        return { answer, raised, reads: reads() };
+    };
+
+    const OPERATIONS = [
+        ['Object.keys', (box) => Object.keys(box)],
+        ['Object.getOwnPropertyDescriptors', (box) => Object.keys(Object.getOwnPropertyDescriptors(box))],
+        ['Object.hasOwn', (box) => Object.hasOwn(box, 'value')],
+        ['a spread', (box) => ({ ...box }).value],
+        ['Object.assign', (box) => Object.assign({}, box).value],
+        ['Object.entries', (box) => Object.fromEntries(Object.entries(box)).value]
+    ];
+
+    test.each(
+        ['property', 'descriptor'].flatMap((kind) =>
+            ['stable', 'changing', 'raising'].flatMap((mode) => OPERATIONS.map(([name, operation]) => [kind, mode, name, operation]))
+        )
+    )('a %s, %s: %s reads as a getter does', (kind, mode, name, operation) => {
+        const py = $B.$call(fresh, kind, mode);
+        const js = native(mode);
+
+        expect(traced(viewOf(py), operation, () => $B.$getattr(py, 'reads'))).toEqual(traced(js, operation, () => js.reads));
+    });
+});
+
 test('a walk of a view left early is left as an Array walk is', () => {
     const view = viewOf(made('[1, 2, 3]'));
     const seen = [];

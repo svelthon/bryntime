@@ -74,9 +74,9 @@ const asSet = (value, name) => {
 };
 
 // A view's own property, described. One whose read runs the author's code, a
-// `__getitem__` or a `__getattribute__` of their class, is an accessor, as a
-// getter is in JavaScript: listing the keys reads nothing, and a copy reads it
-// once, through the view. Any other holds its value, read here, as Svelte's
+// `__getitem__` or a `__getattribute__` of their class, or a property of theirs,
+// is an accessor, as a getter is in JavaScript: listing the keys reads nothing,
+// and a copy reads it once, through the view. Any other holds its value, read here, as Svelte's
 // state describes its own.
 const viewDescriptor = (view, key, authored, read) =>
     authored
@@ -479,8 +479,28 @@ function instanceView(value) {
         return kind !== undefined && declares(kind, '__delete__') !== $B.NULL;
     };
     const write = (key, given) => typeof key === 'string' && ($B.$setattr(value, key, entering(given)), true);
-    // Whether a read is the author's: a `__getattribute__` of their class.
-    const authored = () => declares(quietPyType(value), '__getattribute__') !== declares(_b_.object, '__getattribute__');
+    // Whether a read of the name is the author's: a `__getattribute__` of
+    // their class, or a data descriptor the class holds under the name, a
+    // `property` or one of their own, which Python's lookup runs ahead of the
+    // instance's dictionary. A slot's is the engine's and runs nothing of
+    // theirs. Read off the class dictionaries, nothing of the author's run.
+    const authored = (key) => {
+        const type = quietPyType(value);
+
+        if (declares(type, '__getattribute__') !== declares(_b_.object, '__getattribute__')) return true;
+
+        const held = declares(type, key);
+
+        if (held === $B.NULL) return false;
+
+        const kind = $B.get_class(held);
+
+        return (
+            kind !== $B.member_descriptor &&
+            $B.search_slot(kind, 'tp_descr_get', $B.NULL) !== $B.NULL &&
+            $B.search_slot(kind, 'tp_descr_set', $B.NULL) !== $B.NULL
+        );
+    };
 
     // How the instance prints, when its class says: a `__str__` or a `__repr__`
     // on it or on a base other than `object` is its `toString`, as a JavaScript
@@ -529,7 +549,7 @@ function instanceView(value) {
         getOwnPropertyDescriptor(shell, key) {
             follow(value);
 
-            return owns(key) ? viewDescriptor(view, key, authored(), () => forReader(attribute(key))) : undefined;
+            return owns(key) ? viewDescriptor(view, key, authored(key), () => forReader(attribute(key))) : undefined;
         },
         set(shell, key, given) {
             return write(key, given);
