@@ -25,6 +25,8 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "BRYTHON.md",
+    "demo",
     "src",
     "vendor"
   ],
