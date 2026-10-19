@@ -172,7 +172,7 @@ export const plainScalar = (value) => {
 // What the host answers, handed over by it as it loads: whether one of its
 // states owns a value (`owns`), how it makes an object its state (`adopt`),
 // and the name its author knows, which signs every refusal (`name`).
-// Svelthon's answer for Svelte's. With no host, no state owns anything, an
+// With no host, no state owns anything, an
 // object stays as it is, and a refusal is signed with Bryntime's own name.
 //
 // And how its reactions read and write, which a watched Python value is
@@ -236,7 +236,7 @@ export const lent = {
 // `Object.groupBy` returns, and a module namespace object.
 //
 // One predicate for every crossing that asks it, `branch` here and a host's
-// own serialisers (Svelthon's `tojson` and `urlencode`), so a copy, JSON and a
+// own serialisers, so a copy, JSON and a
 // query string agree on what a bag of keys is.
 //
 // And a **root** prototype rather than *our* `Object.prototype`: an object built
@@ -439,7 +439,7 @@ export const pyBytes = (value) => {
 // and Chrome refuses a typed array over a buffer that grows. So a copy, of the
 // bytes held at the crossing: exact for `bytes`, which never change, and for a
 // `bytearray` the bytes of that moment, which the host takes again whenever it
-// hands the value over (Svelthon, at each change of an export and each render
+// hands the value over (at each change of an export and each render
 // of a prop).
 export const mutableBytes = (value) => ownType(value).tp_mro.includes(_b_.bytearray);
 
@@ -1798,7 +1798,7 @@ export const doors = {
     }
 };
 
-// A door taking more than the value (in Svelthon, a snippet's owners or a
+// A door taking more than the value (a snippet's owners or a
 // child's component) is handed the rest after it.
 export const toJs = (value, name, ...rest) => OUT.get(name)(value, ...rest);
 export const toPython = (value, name, ...rest) => IN.get(name)(value, ...rest);

@@ -139,7 +139,7 @@ const importsRunBodies = ($B) => {
 
 // The module's body, `run`, behind the function that runs it once: an import
 // statement calls it through the engine, and the module JavaScript imports
-// calls it as it is evaluated (`svelthon.js`, `eagerModule`). `published`
+// calls it as it is evaluated. `published`
 // is the name it is imported by, or null for a name no `import` can write,
 // `+page.server`.
 //
