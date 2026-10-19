@@ -34,4 +34,6 @@ const pythonModules = {
     }
 };
 
-export default { plugins: [pythonModules] };
+// A test is slow past five seconds: loading the compiler, forcing the garbage
+// collector or measuring a growth takes what it takes, and is no warning.
+export default { plugins: [pythonModules], test: { environment: 'jsdom', slowTestThreshold: 5000 } };
