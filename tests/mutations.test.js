@@ -4,7 +4,7 @@
 // copy, and a write that changes nothing tell nobody, as Svelte's own state
 // tells nobody. The subscriber is a plain callback (`track`), no host needed.
 import { test, expect, describe } from 'vitest';
-import { track, unsubscribe, follow } from '../bryntime.js';
+import { track, unsubscribe, follow, changesNothing } from '../bryntime.js';
 import { python } from './python.js';
 
 const $B = globalThis.__BRYTHON__;
@@ -190,4 +190,24 @@ def grow():
         expect(follow(rows)).toBe(rows);
         expect(follow(3)).toBe(3);
     });
+});
+
+// A name written the value it holds tells nobody, as a Svelte state written a
+// value `===` to its own: the same object, or two floats of one number. A
+// value the page shows otherwise is a change: `-0.0` over `0.0`, `True` over
+// `1`, and a NaN over another, which Svelte's `===` tells too.
+test('a write of the value held changes nothing, and one the page shows otherwise does', () => {
+    const read = python(`
+rows = [1]
+half, other_half = 2.5, 5 / 2
+negative, zero = -0.0, 0.0
+one, true = 1, True
+nan, other_nan = float("nan"), float("nan")
+`);
+
+    expect(changesNothing(read('rows'), read('rows'))).toBe(true);
+    expect(changesNothing(read('half'), read('other_half'))).toBe(true);
+    expect(changesNothing(read('negative'), read('zero'))).toBe(false);
+    expect(changesNothing(read('one'), read('true'))).toBe(false);
+    expect(changesNothing(read('nan'), read('other_nan'))).toBe(false);
 });
