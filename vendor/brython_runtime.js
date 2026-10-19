@@ -3356,16 +3356,17 @@ doc=old.prop_doc ?? _b_.None}
 let _new=$B.$call(type,get,set,del,doc)
 if($B.exact_type(_new,_b_.property)){_new.prop_name=old.prop_name}
 return _new}
-_b_.property.tp_descr_set=function(self,obj,value){if(self.prop_set===_b_.None){var fi=self.prop_get.$function_infos
+_b_.property.tp_descr_set=function(self,obj,value){if(value===$B.NULL){if(self.prop_del===_b_.None){$B.RAISE(_b_.AttributeError,`property '${self.prop_name}' of '${$B.class_name(obj)}' `+
+`object has no deleter`
+)}
+$B.$call(self.prop_del,obj)
+return}
+if(self.prop_set===_b_.None){var fi=self.prop_get.$function_infos
 var name=fi ? fi[$B.func_attrs.__name__]:(self.prop_name ?? self.__name__)
 var msg=`property '${name}' of '${$B.class_name(obj)}' object `+
 'has no setter'
 $B.RAISE_ATTRIBUTE_ERROR(msg,self,'__set__')}
-if(value===$B.NULL){if(self.prop_del===_b_.None){$B.RAISE(_b_.AttributeError,`property '${self.prop_name}' of '${$B.class_name(obj)}' `+
-`object has no deleter`
-)}
-$B.$call(self.prop_del,obj)}else{
-$B.$call(self.prop_set,obj,value)}}
+$B.$call(self.prop_set,obj,value)}
 _b_.property.tp_descr_get=function(self,obj,type){if(obj===$B.NULL){return self}
 if(self.prop_get===_b_.None){$B.RAISE_ATTRIBUTE_ERROR("unreadable attribute",self,'__get__')}
 return $B.$call(self.prop_get,obj)}

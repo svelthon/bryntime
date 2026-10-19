@@ -306,6 +306,12 @@ value = Account()
         expect($B.$getattr(py, 'owner', null)).toBe(null);
     });
 
+    test('a deleter of its class runs', () => {
+        const py = account();
+
+        delete viewOf(py).balance;
+        expect(repr($B.$getattr(py, 'log'))).toBe("['closed']");
+    });
 });
 
 test('a walk of a view left early is left as an Array walk is', () => {

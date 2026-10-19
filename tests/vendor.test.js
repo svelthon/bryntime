@@ -815,6 +815,20 @@ test('sorting compares with < alone: sort-less-than-only', async () => {
     expect([...answers()]).toEqual(['bac', 'acb', 'bac']);
 });
 
+// `del` on a property with a deleter and no setter raised "has no setter":
+// the descriptor asked for a setter before telling a deletion from a write.
+// A write still says "has no setter", a deletion without a deleter "has no
+// deleter". `python3` on the same module.
+test('a property with a deleter and no setter runs it on del: property-delete-without-setter', async () => {
+    const { answers } = await import('./fixtures/property_deleter.py');
+
+    expect([...answers()]).toEqual([
+        "['deleted', 'deleted']",
+        "AttributeError: property 'x' of 'A' object has no setter",
+        "AttributeError: property 'x' of 'B' object has no deleter"
+    ]);
+});
+
 // Whether a JavaScript error is a stack overflow, the engine asked by writing
 // it on the console, its stack included, a line of debugging left in.
 test('a stack overflow taken for a RecursionError is not logged: recursion-error-unlogged', () => {

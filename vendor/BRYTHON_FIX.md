@@ -4,7 +4,9 @@
 from Brython's master of 11 September 2026 plus one hundred and sixty proposed commits
 (`metaclass-getattribute-args`, `iterator-setstate` and `getitem-binding` in two, as amended for their PRs) and five merged
 upstream since (#3022, #2996, #2989, #2982, #3125), with **four** edits
-made in the file itself afterwards. The wrapper, the integer format and the
+made in the file itself afterwards, and one proposed commit,
+`property-delete-without-setter`, applied in the file itself until the next
+re-vendoring takes it from its branch. The wrapper, the integer format and the
 `__call__` binding carry a `/* BRYNTIME patch, see BRYTHON_FIX.md */` comment,
 the only way to find them again in 1.4 MB; the other edit *is* a comment, so
 `@vite-ignore` finds itself.
@@ -35,6 +37,7 @@ written against:
 | `jsobj-function-tostring` | a function read off a JavaScript object is told from a class by `Function.prototype.toString`, not by its own `toString`, which a JavaScript library may override: a snippet of Svelte's in development mode throws from it, so a Python snippet kept in a JavaScript object and rendered by `holder.fn(…)` raised `snippet_without_render_tag` before it was called |
 | `list-eq-left-to-right` | lists and tuples compare their items from the first, up to the first that differs: `list_eq` walked them from the last, so `(1, a) == (2, b)` asked `a == b` before telling `1` from `2`, and an `{#each}` sorting `d.items()` read inside every row it compared |
 | `sort-less-than-only` | sorting compares with `<` alone: the comparator asked `a == b` whenever `a < b` was false, so a sort ran an `__eq__` CPython never runs, and one that raises refused the sort. It asks `b < a` instead, which keeps equal items in their order |
+| `property-delete-without-setter` | `del` on a property with a deleter and no setter runs the deleter: `property.tp_descr_set` asked for a setter before telling a deletion from a write, and raised "has no setter" |
 | `recursion-error-unlogged` | a stack overflow taken for a `RecursionError` is no more written on the console: `$B.is_recursion_error` logged every JavaScript error it was asked about, `js exc RangeError…` with its stack, a line of debugging left in |
 | `repr-deep-nesting` (#3125, merged) | `repr()` of nested containers is limited by the stack, not by the recursion limit: it raised `RecursionError` past a thousand levels, where CPython 3.14 writes as deep as its stack goes. A stack overflow out of the outermost `repr()` is the `RecursionError`, and leaves no object marked as being represented |
 | `dict-proto-key` | a dict entry whose key is `"__proto__"` is kept. The fast path for a string key is `d[key] = value`, which reaches the accessor on `Object.prototype`: the entry was lost and the value became the dictionary's own prototype, so `"__proto__" in d` was false and reading it raised `KeyError` on a key that had been written. It goes to the hash table instead, exactly as a string parsed as a negative integer already did, and the four sites that ask whether a key can be an ordinary property now ask it in one place |
