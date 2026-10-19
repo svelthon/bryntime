@@ -3,7 +3,7 @@
 // handed over as a host's export is (`pyExport`), a name it does not hold as
 // undefined. And Python run for a test's own values, read as Python holds them.
 import { createRequire } from 'node:module';
-import { pyExport } from '../bryntime.js';
+import { bind, pyExport, withNamespace } from '../bryntime.js';
 
 createRequire(import.meta.url)('../vendor/brython_compiler.js');
 
@@ -24,6 +24,31 @@ export const python = (source) => {
 
     return (name) => globalThis.__BRYTHON__.$getattr(module, name);
 };
+
+// A module as a compiler hands it to Bryntime: each declared name an accessor
+// on the namespace's prototype (`bind`) over a cell of its own, the namespace
+// made on it, and the body, compiled by Brython, run in it (`withNamespace`).
+// The cells, as the generated code's own variables hold the values.
+export function compiledModule(source, name, declared = []) {
+    const $B = globalThis.__BRYTHON__;
+    const cells = {};
+    const proto = Object.create(null);
+
+    for (const one of declared) {
+        bind(proto, one, () => cells[one], (next) => (cells[one] = next), () => cells[one]);
+    }
+
+    const namespace = Object.create(proto);
+
+    namespace.$proxy = true;
+    namespace.__name__ = name;
+
+    const js = $B.python_to_js(source, name);
+    // In the namespace given, the one a failed run renewed (`pythonModule`).
+    const run = (target = namespace) => withNamespace(name, target, () => (0, eval)(js));
+
+    return { namespace, cells, run };
+}
 
 export function pythonModule(source, name) {
     const $B = globalThis.__BRYTHON__;
