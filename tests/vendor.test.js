@@ -5,7 +5,7 @@ import v8 from 'node:v8';
 import { runInNewContext } from 'node:vm';
 
 import { test, expect, describe, vi } from 'vitest';
-import '../bryntime.js';
+import '../src/bryntime.js';
 import * as deleteOrder from './fixtures/delete_order.py';
 import * as strKeywords from './fixtures/str_keywords.py';
 import * as jsonText from './fixtures/json_text.py';
@@ -1117,7 +1117,7 @@ test('code from compile() runs where its tree leaves a field out: compile-ast-op
 // descriptors: it read the storage by its name, which is the base's.
 test('a redeclared slot crosses as box.x reads it: slots-shadowed-storage', async () => {
     const { shadowed_box } = await import('./fixtures/class_bases.py');
-    const { plainData } = await import('../bryntime.js');
+    const { plainData } = await import('../src/bryntime.js');
 
     expect(plainData(shadowed_box())).toEqual({ x: 2 });
 });

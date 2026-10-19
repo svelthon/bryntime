@@ -4,7 +4,7 @@
 // equality below is CPython's: `python3` answers `True` where two values share
 // a key here, and `False` where they do not.
 import { test, expect, describe } from 'vitest';
-import { key, restOf, starredEntries, unpackStarred, lookup, byIndex, javaScriptRow, MISSING, NONE } from '../bryntime.js';
+import { key, restOf, starredEntries, unpackStarred, lookup, byIndex, javaScriptRow, MISSING, NONE } from '../src/bryntime.js';
 import { python } from './python.js';
 
 const read = python(`

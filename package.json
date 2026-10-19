@@ -18,19 +18,19 @@
     "javascript"
   ],
   "type": "module",
-  "main": "./bryntime.js",
+  "main": "./src/bryntime.js",
   "exports": {
-    ".": "./bryntime.js",
+    ".": "./src/bryntime.js",
     "./compiler": "./vendor/brython_compiler.js",
     "./package.json": "./package.json"
   },
   "files": [
-    "*.js",
+    "src",
     "vendor"
   ],
   "scripts": {
     "test": "vitest run",
-    "coverage": "vitest run --coverage --coverage.include='*.js' --coverage.exclude=vitest.config.js --coverage.exclude='vendor/**' --coverage.exclude='tests/**'"
+    "coverage": "vitest run --coverage --coverage.include='src/**'"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.12",

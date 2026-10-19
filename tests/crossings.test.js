@@ -4,7 +4,7 @@
 // copied in for Python (`pyData`). None is JavaScript's undefined at every
 // door, and null in JSON alone; `javascript.NULL` is null.
 import { test, expect, describe } from 'vitest';
-import { plainData, pyData, plainScalar } from '../bryntime.js';
+import { plainData, pyData, plainScalar } from '../src/bryntime.js';
 import { python } from './python.js';
 
 const $B = globalThis.__BRYTHON__;

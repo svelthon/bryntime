@@ -7,7 +7,7 @@
 // then updating each row once read n² entries. Counted here by the entries the
 // dict's own iteration produces.
 import { test, expect } from 'vitest';
-import { track, unsubscribe } from '../bryntime.js';
+import { track, unsubscribe } from '../src/bryntime.js';
 
 const $B = globalThis.__BRYTHON__;
 const list = (items) => $B.builtins.list.$factory(items);

@@ -4,7 +4,7 @@
 // and must answer the same, while what it writes lands in the Python value,
 // which `repr()` reads back as `python3` would print it.
 import { test, expect, describe } from 'vitest';
-import { viewOf } from '../bryntime.js';
+import { viewOf } from '../src/bryntime.js';
 import { python } from './python.js';
 
 const $B = globalThis.__BRYTHON__;

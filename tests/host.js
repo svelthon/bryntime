@@ -3,7 +3,7 @@
 // and are run again by `flush` once one of them is told. A reaction may be
 // rendering, where telling a subscription is refused, as Svelte refuses a
 // write to its state while it renders (`state_unsafe_mutation`).
-import { host } from '../bryntime.js';
+import { host } from '../src/bryntime.js';
 
 let current = null;
 const dirty = new Set();

@@ -4,7 +4,7 @@
 // a promise, a JavaScript function called by Python, and a module's exports.
 // Each result is what `python3` computes for the same call.
 import { test, expect, describe } from 'vitest';
-import { pyHandler, pyExport, pyArg, standsFor, NONE } from '../bryntime.js';
+import { pyHandler, pyExport, pyArg, standsFor, NONE } from '../src/bryntime.js';
 import { python } from './python.js';
 
 const $B = globalThis.__BRYTHON__;

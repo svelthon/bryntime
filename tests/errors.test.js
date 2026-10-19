@@ -3,7 +3,7 @@
 // stack filled in and placed at its line, a refusal completed with where it was
 // asked, and an ordinary `Error` handed to whatever runs past the last frame.
 import { test, expect, describe } from 'vitest';
-import { raised, pyError, thrown, relayed, refusal, refused } from '../bryntime.js';
+import { raised, pyError, thrown, relayed, refusal, refused } from '../src/bryntime.js';
 import { python, runPython } from './python.js';
 
 // The exception a call raises, as JavaScript catches it.

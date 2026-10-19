@@ -4,7 +4,7 @@
 // again when the class's attribute is written; a reaction stops listening when
 // it stops; and the rows a computation shapes follow what it read of them.
 import { test, expect, describe } from 'vitest';
-import { follow, track, shaped, trackOwns, host } from '../bryntime.js';
+import { follow, track, shaped, trackOwns, host } from '../src/bryntime.js';
 import { reaction, flush } from './host.js';
 import { python } from './python.js';
 

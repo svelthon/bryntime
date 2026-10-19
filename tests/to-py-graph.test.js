@@ -8,7 +8,7 @@
 // So each array is registered before its children are walked. That also settles
 // the shared reference, which is the same fact seen without a cycle.
 import { test, expect, describe } from 'vitest';
-import { pyData } from '../bryntime.js';
+import { pyData } from '../src/bryntime.js';
 
 describe('to_py on a graph', () => {
     test('an array that contains itself', () => {

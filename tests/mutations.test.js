@@ -4,7 +4,7 @@
 // copy, and a write that changes nothing tell nobody, as Svelte's own state
 // tells nobody. The subscriber is a plain callback (`track`), no host needed.
 import { test, expect, describe } from 'vitest';
-import { track, unsubscribe, follow, changesNothing } from '../bryntime.js';
+import { track, unsubscribe, follow, changesNothing } from '../src/bryntime.js';
 import { python } from './python.js';
 
 const $B = globalThis.__BRYTHON__;

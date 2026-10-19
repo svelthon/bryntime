@@ -5,7 +5,7 @@
 // import that needs it (`pythonModule`). Each answer below is what `python3`
 // prints for the same module.
 import { test, expect, describe } from 'vitest';
-import { liveExport, pythonModule, registerModule, moduleNamespace, invoke, NONE } from '../bryntime.js';
+import { liveExport, pythonModule, registerModule, moduleNamespace, invoke, NONE } from '../src/bryntime.js';
 import { compiledModule, runPython } from './python.js';
 
 const $B = globalThis.__BRYTHON__;
