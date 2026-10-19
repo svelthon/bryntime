@@ -80,7 +80,9 @@ const NOTHING = [
     ['set.add of a member there', '{1}', 'value.add(1)'],
     ['set.discard of a member not there', '{1}', 'value.discard(2)'],
     ['set.update with nothing new', '{1}', 'value.update({1})'],
-    ['an operation making a new list', '[1]', 'other = value + [2]']
+    ['an operation making a new list', '[1]', 'other = value + [2]'],
+    ['an item written the value it holds', '[1, 2.5]', 'value[0] = value[0]'],
+    ['an item written an equal float', '[2.5]', 'value[0] = 5 / 2']
 ];
 
 // Told all the same, by rule. A list is Svelte's array, which writes on any of
@@ -137,10 +139,13 @@ def run():
         expect(count).toBeGreaterThan(0);
     });
 
-    test('a read of an attribute does not', () => {
+    test.each([
+        ['a read of an attribute', 'return value.x'],
+        ['an attribute written the value it holds', 'value.x = value.x']
+    ])('%s does not', (name, operation) => {
         const read = python(`${point}
 def run():
-    return value.x
+    ${operation}
 `);
         let count = 0;
 
