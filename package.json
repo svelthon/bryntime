@@ -29,9 +29,11 @@
     "vendor"
   ],
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "coverage": "vitest run --coverage --coverage.include='*.js' --coverage.exclude=vitest.config.js"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.12",
     "jsdom": "^29.1.1",
     "vitest": "^4.1.12"
   }

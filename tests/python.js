@@ -11,6 +11,10 @@ const MISSING = {};
 
 export function pythonModule(source, name) {
     const $B = globalThis.__BRYTHON__;
+
+    // The engine names a script by the page's address, which Node has not.
+    globalThis.location ??= new URL('file:///');
+
     const module = $B.runPythonSource(source, { id: name });
 
     return (key) => {
