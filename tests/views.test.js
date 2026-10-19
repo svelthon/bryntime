@@ -205,3 +205,117 @@ value = Point()
         expect($B.$getattr(py, 'x')).toBe(5);
     });
 });
+
+describe("a set's view answers a Set's methods as a Set does", () => {
+    const other = () => new Set([2, 3]);
+
+    test.each([
+        ['union', (s) => [...s.union(other())].sort()],
+        ['intersection', (s) => [...s.intersection(other())]],
+        ['difference', (s) => [...s.difference(other())]],
+        ['symmetricDifference', (s) => [...s.symmetricDifference(other())].sort()],
+        ['isSubsetOf', (s) => s.isSubsetOf(new Set([1, 2, 3]))],
+        ['isSupersetOf', (s) => s.isSupersetOf(new Set([1]))],
+        ['isDisjointFrom', (s) => s.isDisjointFrom(new Set([9]))],
+        ['keys', (s) => [...s.keys()].sort()],
+        ['values', (s) => [...s.values()].sort()],
+        ['entries', (s) => [...s.entries()].sort()],
+        ['forEach', (s) => {
+            const seen = [];
+            s.forEach((one) => seen.push(one));
+            return seen.sort();
+        }]
+    ])('%s', (name, operation) => {
+        const [js, py] = both(new Set([1, 2]), made('{1, 2}'), operation);
+
+        expect(py).toEqual(js);
+    });
+
+    test('clear empties the Python set', () => {
+        const py = made('{1, 2}');
+
+        viewOf(py).clear();
+        expect(repr(py)).toBe('set()');
+    });
+});
+
+describe("a view keeps Svelte's rules for its own state", () => {
+    test.each([
+        ['a list', '[1]', '0'],
+        ['a dict', '{"a": 1}', 'a']
+    ])('%s takes a descriptor holding a value, writable, enumerable and configurable, and refuses any other', (name, source, key) => {
+        const py = made(source);
+        const view = viewOf(py);
+
+        Object.defineProperty(view, key, { value: 7, writable: true, enumerable: true, configurable: true });
+        expect(view[key]).toBe(7);
+        expect(() => Object.defineProperty(view, key, { value: 8, writable: false })).toThrow(TypeError);
+        expect(() => Object.defineProperty(view, key, { get: () => 9, enumerable: true, configurable: true })).toThrow(TypeError);
+        expect(view[key]).toBe(7);
+    });
+
+    test.each([
+        ['a list', '[1]'],
+        ['a dict', '{"a": 1}']
+    ])('%s can be neither locked nor given another prototype', (name, source) => {
+        const view = viewOf(made(source));
+
+        expect(() => Object.preventExtensions(view)).toThrow(TypeError);
+        expect(() => Object.setPrototypeOf(view, null)).toThrow(TypeError);
+        expect(Object.isExtensible(view)).toBe(true);
+    });
+
+    test('an instance too', () => {
+        const view = viewOf(
+            python(`
+class Point:
+    def __init__(self):
+        self.x = 1
+value = Point()
+`)('value')
+        );
+
+        expect(() => Object.preventExtensions(view)).toThrow(TypeError);
+        expect(() => Object.setPrototypeOf(view, null)).toThrow(TypeError);
+        expect(() => Object.defineProperty(view, 'x', { value: 2, writable: false })).toThrow(TypeError);
+        Object.defineProperty(view, 'x', { value: 2, writable: true, enumerable: true, configurable: true });
+        expect(view.x).toBe(2);
+    });
+});
+
+describe("an instance's view deletes as Python's delattr does", () => {
+    const account = () =>
+        python(`
+class Account:
+    def __init__(self):
+        self.owner = "ada"
+        self.log = []
+    @property
+    def balance(self):
+        return 0
+    @balance.deleter
+    def balance(self):
+        self.log.append("closed")
+value = Account()
+`)('value');
+
+    test('an attribute of its own goes', () => {
+        const py = account();
+
+        delete viewOf(py).owner;
+        expect($B.$getattr(py, 'owner', null)).toBe(null);
+    });
+
+});
+
+test('a walk of a view left early is left as an Array walk is', () => {
+    const view = viewOf(made('[1, 2, 3]'));
+    const seen = [];
+
+    for (const one of view) {
+        seen.push(one);
+        if (one === 2) break;
+    }
+    expect(seen).toEqual([1, 2]);
+    expect([...view]).toEqual([1, 2, 3]);
+});
