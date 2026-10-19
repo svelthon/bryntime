@@ -329,6 +329,41 @@ export const declares = (cls, name) => {
     return $B.NULL;
 };
 
+// Whether what a class holds under a name is what JavaScript calls a getter: a
+// data descriptor of the author's, a `property` or one of their own class with
+// `__get__` and `__set__`, which Python's lookup runs ahead of the instance's
+// dictionary. The engine's own, a slot's or the `__dict__` every class holds,
+// runs nothing of theirs: read as a getter, `__dict__` was read off each of two
+// thousand rows. Read off the descriptor's class, nothing of the author's run.
+export const accessor = (held) => {
+    const $B = globalThis.__BRYTHON__;
+
+    if (held === $B.NULL || held === undefined) return false;
+
+    const kind = $B.get_class(held);
+
+    return (
+        kind === _b_.property ||
+        (authoredClass(kind) &&
+            $B.search_slot(kind, 'tp_descr_get', $B.NULL) !== $B.NULL &&
+            $B.search_slot(kind, 'tp_descr_set', $B.NULL) !== $B.NULL)
+    );
+};
+
+// The names a class holds as accessors in its own dictionary, not in its
+// bases': what a JavaScript framework's deep read calls on an instance of a
+// class of its own, the getters of its prototype and not of the prototype's.
+// Read off the class dictionary, nothing of the author's run.
+export const ownAccessors = (cls) => {
+    const attributes = cls === undefined ? undefined : ownAttributes(cls);
+
+    if (attributes === null || attributes === undefined || !isDict(attributes)) return [];
+
+    return pyEntries(attributes)
+        .filter(([key, held]) => typeof key === 'string' && accessor(held))
+        .map(([key]) => key);
+};
+
 // Whether this object's *class* declares `__slots__`, which is the question, and
 // not whether the object happens to carry a property whose name begins like
 // one.

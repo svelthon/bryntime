@@ -7,7 +7,7 @@ import * as mutations from './mutations.js';
 import { pyError, relayed } from './errors.js';
 import { ADAPTERS, declared, pyExport, pyHandler } from './calls.js';
 
-const { LIST_VIEW, NONE, PLAIN_VIEW, VIEWED, VIEW_OF, _b_, authoredInstance, bytesOut, callable, crossedAs, declares, define, entering, isSet, iterated, lent, ownAttributes, ownType, plainData, plainScalar, propertyKey, pyAwaitable, pyBind, pyBytes, pyClass, pyEntries, pyScalar, pyType, quietPyType, refused, slotValues, twoKeys } = core;
+const { LIST_VIEW, NONE, PLAIN_VIEW, VIEWED, VIEW_OF, _b_, accessor, authoredInstance, bytesOut, callable, crossedAs, declares, define, entering, isSet, iterated, lent, ownAttributes, ownType, plainData, plainScalar, propertyKey, pyAwaitable, pyBind, pyBytes, pyClass, pyEntries, pyScalar, pyType, quietPyType, refused, slotValues, twoKeys } = core;
 const { MARKS, MISSING, PUBLISHED, follow, mark, removeFound } = mutations;
 
 // The same rows, for a JavaScript walk of a view. What the class raises, or a
@@ -480,26 +480,14 @@ function instanceView(value) {
     };
     const write = (key, given) => typeof key === 'string' && ($B.$setattr(value, key, entering(given)), true);
     // Whether a read of the name is the author's: a `__getattribute__` of
-    // their class, or a data descriptor the class holds under the name, a
-    // `property` or one of their own, which Python's lookup runs ahead of the
-    // instance's dictionary. A slot's is the engine's and runs nothing of
-    // theirs. Read off the class dictionaries, nothing of the author's run.
+    // their class, or an accessor the class holds under the name (`accessor`).
+    // Read off the class dictionaries, nothing of the author's run.
     const authored = (key) => {
         const type = quietPyType(value);
 
         if (declares(type, '__getattribute__') !== declares(_b_.object, '__getattribute__')) return true;
 
-        const held = declares(type, key);
-
-        if (held === $B.NULL) return false;
-
-        const kind = $B.get_class(held);
-
-        return (
-            kind !== $B.member_descriptor &&
-            $B.search_slot(kind, 'tp_descr_get', $B.NULL) !== $B.NULL &&
-            $B.search_slot(kind, 'tp_descr_set', $B.NULL) !== $B.NULL
-        );
+        return accessor(declares(type, key));
     };
 
     // How the instance prints, when its class says: a `__str__` or a `__repr__`

@@ -4,7 +4,7 @@
 // and must answer the same, while what it writes lands in the Python value,
 // which `repr()` reads back as `python3` would print it.
 import { test, expect, describe } from 'vitest';
-import { viewOf } from '../src/bryntime.js';
+import { ownAccessors, viewOf } from '../src/bryntime.js';
 import { python } from './python.js';
 
 const $B = globalThis.__BRYTHON__;
@@ -409,6 +409,41 @@ def fresh(kind, mode):
 
         expect(traced(viewOf(py), operation, () => $B.$getattr(py, 'reads'))).toEqual(traced(js, operation, () => js.reads));
     });
+});
+
+// The getters of an instance's prototype, which a framework's deep read runs:
+// the accessors its class holds in its own dictionary (`ownAccessors`), a
+// property and a descriptor of the author's; not a method, a slot, the
+// `__dict__` and `__weakref__` the engine gives a class, a descriptor that only
+// reads, nor its base's, as a deep read of JavaScript's runs no getter of the
+// prototype's prototype.
+test("a class's own accessors are its properties and data descriptors", () => {
+    const made = python(`
+class Reads:
+    def __get__(self, obj, cls=None):
+        return 1
+
+class Writes(Reads):
+    def __set__(self, obj, given):
+        pass
+
+class Base:
+    @property
+    def inherited(self):
+        return 1
+
+class Box(Base):
+    __slots__ = ("slot",)
+    described = Writes()
+    only_read = Reads()
+    @property
+    def amount(self):
+        raise ValueError("not run")
+    def method(self):
+        pass
+`);
+
+    expect([ownAccessors(made('Box')).sort(), ownAccessors(made('Base'))]).toEqual([['amount', 'described'], ['inherited']]);
 });
 
 test('a walk of a view left early is left as an Array walk is', () => {
