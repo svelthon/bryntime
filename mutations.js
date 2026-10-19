@@ -466,8 +466,9 @@ function installMutationTracking($B) {
     };
 
     // An item of a list written by its index, read there before and after,
-    // and an attribute of an instance, read where Python's lookup finds it
-    // (`attributeOf`), on one whose class writes it as `object` does: one
+    // and an attribute of an instance, read where it is stored or where
+    // Python's lookup finds it (`attributeOf`), on one whose class writes it
+    // as `object` does: one
     // whose `__setattr__` is its own may store it anywhere. The value written
     // over itself tells nobody, as an item or a field of Svelte's `$state`
     // tells nobody (`changesNothing`), and is refused where Svelte refuses.
@@ -492,6 +493,24 @@ function installMutationTracking($B) {
         const type = quietPyType(target);
 
         if (type === undefined || declares(type, '__setattr__') !== OBJECT_SETATTR) return null;
+
+        // Where `object` writes it, the instance's own dictionary, when its
+        // class holds no data descriptor under the name: read there directly,
+        // a string key of a dict of string keys being its own property, and
+        // not by Python's whole lookup, which every attribute write of a
+        // watched instance paid twice.
+        const described = declares(type, attr);
+        const own =
+            described === $B.NULL || $B.search_slot($B.get_class(described), 'tp_descr_set', $B.NULL) === $B.NULL
+                ? ownAttributes(target)
+                : undefined;
+
+        if (own !== null && typeof own === 'object' && KEYS !== undefined && own[KEYS] === undefined && $B.is_dict(own)) {
+            const held = () => (Object.hasOwn(own, attr) ? own[attr] : MISSING);
+            const stored = held();
+
+            return () => !changesNothing(held(), stored);
+        }
 
         const before = attributeOf(target, attr);
 

@@ -153,6 +153,24 @@ def run():
         $B.$call(read('run'));
         expect(count).toBe(0);
     });
+
+    // Read where the instance stores it when its class holds no data
+    // descriptor under the name, and by Python's lookup otherwise: a property
+    // may store the value anywhere, here where no write of the instance's is.
+    test.each([
+        ['an attribute shadowing its class\'s, written an equal float, does not tell','class Box:\n    x = 0\n    def __init__(self):\n        self.x = 2.5\nvalue = Box()', 'value.x = 5 / 2', false],
+        ['a property storing its value elsewhere tells','stored = 1\nclass Box:\n    @property\n    def x(self):\n        return stored\n    @x.setter\n    def x(self, given):\n        global stored\n        stored = given\nvalue = Box()', 'value.x = 2', true]
+    ])('%s', (name, source, operation, tells) => {
+        const read = python(`${source}
+def run():
+    ${operation}
+`);
+        let count = 0;
+
+        track(read('value'), () => (count += 1));
+        $B.$call(read('run'));
+        expect(count > 0).toBe(tells);
+    });
 });
 
 describe('a subscription ends', () => {
