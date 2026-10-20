@@ -67,7 +67,7 @@ A compiler loads Brython's other half onto the same engine:
 
 ```js
 import 'bryntime';
-import 'bryve/compiler';
+import 'bryvend/compiler';
 ```
 
 ## Demo
@@ -92,13 +92,13 @@ cannot drift from the API it shows.
 
 ## The engine
 
-Bryntime runs on Bryve, its peer dependency: Brython's master and the repairs
-proposed there and not merged yet, one commit each, as an ES module. Bryve's
+Bryntime runs on Bryvend, its peer dependency: Brython's master and the repairs
+proposed there and not merged yet, one commit each, as an ES module. Bryvend's
 `BRYTHON_FIX.md` lists them all, with the edits made in the file itself, and
 the tests here hold each repair Bryntime rests on.
 
-A page loads `bryve`, the half without the parsing chain: **224 KB** gzipped. A
-compiler adds the other half, `bryve/compiler`.
+A page loads `bryvend`, the half without the parsing chain: **224 KB** gzipped. A
+compiler adds the other half, `bryvend/compiler`.
 
 What Bryntime asks of the engine, member by member, is in `BRYTHON.md`.
 

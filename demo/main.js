@@ -4,7 +4,7 @@
 import { bind, withNamespace, viewOf, track, plainData, pyExport } from '../src/bryntime.js';
 // The engine's other half, which compiles the Python below in the page. A
 // site compiles ahead of time and ships without it.
-import 'bryve/compiler';
+import 'bryvend/compiler';
 
 const SOURCE = `
 class Todo:

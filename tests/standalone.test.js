@@ -1,7 +1,7 @@
 // @vitest-environment node
 //
 // **Bryntime stands alone**: its modules import the engine and one another,
-// nothing else, and the engine, Bryve's, comes started, first; and loaded
+// nothing else, and the engine, Bryvend's, comes started, first; and loaded
 // with no host to answer, it still turns JavaScript values into Python ones
 // and back. What a host adds, the states it owns and how it makes an object
 // one of them, is asked through `host`, which answers nothing here.
@@ -12,7 +12,7 @@ import { host, pyData, plainData, entering, pyBind, refused, NONE } from '../src
 
 const at = (path) => new URL(`../${path}`, import.meta.url);
 const ENTRY = JSON.parse(readFileSync(at('package.json'), 'utf8')).exports['.'];
-const ENGINE = 'bryve';
+const ENGINE = 'bryvend';
 const IMPORTS = /^(?:import|export)\s+(?:[^'";]*\s+from\s+)?'([^']+)';/gm;
 const read = (file) => readFileSync(at(`src/${file}`), 'utf8');
 
@@ -34,7 +34,7 @@ const modules = () => {
 describe('the engine comes started, before anything of Bryntime', () => {
     // Left to a neighbour's import order, the engine once ran after its start
     // in a production server build, and `$B.brython` was undefined: the site
-    // built and answered 500. Bryve starts it where it is imported, and the
+    // built and answered 500. Bryvend starts it where it is imported, and the
     // entry imports it first.
     test('the entry imports it first', () => {
         expect([...read('bryntime.js').matchAll(IMPORTS)][0][1]).toBe(ENGINE);
@@ -47,7 +47,7 @@ describe('the engine comes started, before anything of Bryntime', () => {
     // The half without the parsing chain is what a page gets, and the README
     // states its weight.
     test('the README states the size of the engine a page loads', () => {
-        const size = Math.round(gzipSync(readFileSync(at('node_modules/bryve/brython_runtime.js'))).length / 1024);
+        const size = Math.round(gzipSync(readFileSync(at('node_modules/bryvend/brython_runtime.js'))).length / 1024);
         const stated = Number(readFileSync(at('README.md'), 'utf8').match(/\*\*(\d+) KB\*\* gzipped/)[1]);
 
         expect(stated).toBe(size);

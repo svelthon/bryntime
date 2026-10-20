@@ -3,7 +3,7 @@
 // Svelte, imports this file and nothing else of the folder, and answers
 // through `host` what only it knows.
 //
-// In this order: the engine, started (`bryve`), what crosses and how
+// In this order: the engine, started (`bryvend`), what crosses and how
 // (`core.js`), the tracking of the Python values a reaction reads, which tells
 // it when they are mutated (`mutations.js`), what Python raises as JavaScript
 // reads it (`errors.js`), the calls between the two languages (`calls.js`), the
@@ -11,7 +11,7 @@
 // modules a page runs, their namespaces, their bodies and what they publish
 // (`modules.js`), and the protocols of Python a host's syntax asks, keys,
 // `**`, a starred name and a key's lookup (`protocols.js`).
-import 'bryve';
+import 'bryvend';
 
 export * from './core.js';
 export * from './mutations.js';
