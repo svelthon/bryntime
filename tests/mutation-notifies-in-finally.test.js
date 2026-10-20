@@ -86,7 +86,7 @@ const code = stripped(source);
 const install = block(code, code.indexOf('{', code.indexOf('function installMutationTracking')));
 
 // Every interception: a function put onto the engine under one of its own names,
-// either directly or through the loop that covers `$setattr` and `$setattr1`,
+// either directly or through the loop that covers `$raise` and `set_exc`,
 // `sourced`, which takes the place of each builtin mutator where the engine
 // keeps it, and `notified`, a JavaScript object's own mutator as Python reads it.
 const ENTRY = /(?:\$B(?:(?:\.[A-Za-z_$][\w$]*)+|\[name\])|\bconst (?:sourced|notified)) = function/g;
@@ -114,7 +114,7 @@ describe('every interception that notifies, notifies on the raising path too', (
             '$B.$setitem',
             '$B.$getitem',
             '$B.$delitem',
-            '$B[name]',
+            '$B.$setattr',
             '$B.builtins.delattr',
             '$B.augm_assign'
         ]);

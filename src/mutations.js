@@ -485,14 +485,16 @@ function installMutationTracking($B) {
         return () => target.length !== length || !changesNothing(target[at], before);
     };
 
-    const OBJECT_SETATTR = $B.search_in_dict(_b_.object, '__setattr__', $B.NULL);
-
+    // Asked of the slot the engine writes with, `tp_setattro`, which it keeps
+    // for every class and resets on each of its subclasses when one of them
+    // takes a `__setattr__`: the one it is about to run. A class is written by
+    // its metaclass's, never by `object`'s, so it is turned away here too.
     const attributeChange = (target, attr) => {
-        if (typeof attr !== 'string' || pyClass(target)) return null;
+        if (typeof attr !== 'string') return null;
 
         const type = quietPyType(target);
 
-        if (type === undefined || declares(type, '__setattr__') !== OBJECT_SETATTR) return null;
+        if (type === undefined || type.tp_setattro !== _b_.object.tp_setattro) return null;
 
         // Where `object` writes it, the instance's own dictionary, when its
         // class holds no data descriptor under the name: read there directly,
@@ -506,10 +508,9 @@ function installMutationTracking($B) {
                 : undefined;
 
         if (own !== null && typeof own === 'object' && KEYS !== undefined && own[KEYS] === undefined && $B.is_dict(own)) {
-            const held = () => (Object.hasOwn(own, attr) ? own[attr] : MISSING);
-            const stored = held();
+            const stored = Object.hasOwn(own, attr) ? own[attr] : MISSING;
 
-            return () => !changesNothing(held(), stored);
+            return () => !changesNothing(Object.hasOwn(own, attr) ? own[attr] : MISSING, stored);
         }
 
         const before = attributeOf(target, attr);
@@ -523,8 +524,15 @@ function installMutationTracking($B) {
         };
     };
 
+    // An attribute write of a watched object, the most frequent write there
+    // is: a set, which holds `$store`, is told as a change, as every call on
+    // it that is not one of its own is.
+    const attributeWrite = (target, attr) => (target.$store !== undefined && isSet(target) ? null : attributeChange(target, attr));
+
     const changeOf = (name, target, args) => {
         if (!MARKS.has(target)) return null;
+
+        if (name === '__setattr__') return attributeWrite(target, args[0]);
 
         if (isSet(target)) {
             const size = target.$used;
@@ -555,7 +563,6 @@ function installMutationTracking($B) {
         }
 
         if (name === '__setitem__' && quietPyType(target) === _b_.list) return itemChange(target, args[0]);
-        if (name === '__setattr__') return attributeChange(target, args[0]);
 
         if (!$B.is_dict(target) || NAMESPACE_DICTS.has(target) || VERSION === undefined || KEYS === undefined) return null;
 
@@ -1302,50 +1309,51 @@ function installMutationTracking($B) {
         inherit(obj, value, undefined, true, name);
     };
 
-    // `box.value = 1` and `del box.value`. Brython compiles an attribute write
-    // through one of two entry points depending on the statement, and both have
-    // to be covered or the rule would hold only half the time.
-    for (const name of ['$setattr', '$setattr1']) {
-        const setattr = $B[name];
-        $B[name] = function (obj, attr, value, ...rest) {
-            // In a `finally`, like every other mutation path: an author's
-            // `__setattr__` may write the attribute and *then* raise, and the
-            // exception does not undo the write. `object.__setattr__(self,
-            // name, value)` followed by a `raise` left the model at 1 and the
-            // page at 0, with the handler catching the error and carrying on.
-            beforeClassWrite(obj, attr);
+    // `box.value = 1`, `setattr(box, "value", 1)` and the rest. Brython
+    // compiles a statement's write through `$setattr1`, which calls
+    // `$setattr` by name at each call, as the builtin does: the one wrapper
+    // answers them all. Wrapping `$setattr1` as well ran each statement's
+    // write through here twice, its comparison and its notification, which
+    // cost half the time of an attribute write.
+    const setattr = $B.$setattr;
+    $B.$setattr = function (obj, attr, value) {
+        // In a `finally`, like every other mutation path: an author's
+        // `__setattr__` may write the attribute and *then* raise, and the
+        // exception does not undo the write. `object.__setattr__(self,
+        // name, value)` followed by a `raise` left the model at 1 and the
+        // page at 0, with the handler catching the error and carrying on.
+        beforeClassWrite(obj, attr);
 
-            // Asked of a watched object only, as every attribute write of the
-            // program comes through here (`changeOf`).
-            const changed = MARKS.has(obj) ? changeOf('__setattr__', obj, [attr, value]) : null;
-            const saved = saving(obj);
-            let result;
+        // Asked of a watched object only, as every attribute write of the
+        // program comes through here (`attributeWrite`).
+        const changed = MARKS.has(obj) ? attributeWrite(obj, attr) : null;
+        const saved = saving(obj);
+        let result;
 
-            try {
-                result = setattr(obj, attr, value, ...rest);
-                return result;
-            } finally {
-                if (changed === null || changed()) settle(obj, saved, () => {
-                    classNameChanged(obj, attr);
+        try {
+            result = setattr(obj, attr, value);
+            return result;
+        } finally {
+            if (changed === null || changed()) settle(obj, saved, () => {
+                classNameChanged(obj, attr);
 
-                    if (MARKS.has(obj)) {
-                        // What the write *stored*, and not only what it was
-                        // handed: a `__setattr__` of the author's may normalise,
-                        // copy or wrap its argument, `object.__setattr__(self,
-                        // name, list(value))` being an ordinary way to defend an
-                        // invariant, and the list the object holds is the one
-                        // the page reads.
-                        //
-                        // Read off the instance's own storage, never through
-                        // `$getattr`: a property of the author's must not run
-                        // because something was written.
-                        rewalk(obj, value, attr);
-                        MARKS.get(obj)();
-                    }
-                });
-            }
-        };
-    }
+                if (MARKS.has(obj)) {
+                    // What the write *stored*, and not only what it was
+                    // handed: a `__setattr__` of the author's may normalise,
+                    // copy or wrap its argument, `object.__setattr__(self,
+                    // name, list(value))` being an ordinary way to defend an
+                    // invariant, and the list the object holds is the one
+                    // the page reads.
+                    //
+                    // Read off the instance's own storage, never through
+                    // `$getattr`: a property of the author's must not run
+                    // because something was written.
+                    rewalk(obj, value, attr);
+                    MARKS.get(obj)();
+                }
+            });
+        }
+    };
 
     // A slot written or deleted through its descriptor: `Box.rows.__set__(box,
     // [1])` and `Box.rows.__delete__(box)` reach the member descriptor without
