@@ -1,7 +1,7 @@
 // @vitest-environment node
 //
 // **Bryntime stands alone**: its modules import the engine and one another,
-// nothing else, and the engine is imported where it is started; and loaded
+// nothing else, and the engine, Bryve's, comes started, first; and loaded
 // with no host to answer, it still turns JavaScript values into Python ones
 // and back. What a host adds, the states it owns and how it makes an object
 // one of them, is asked through `host`, which answers nothing here.
@@ -31,17 +31,17 @@ const modules = () => {
     return [...seen];
 };
 
-describe('the engine is imported where it is started', () => {
-    // Left to a neighbour's import order, the engine ran after `boot.js` in a
-    // production server build, while it was a CommonJS file a bundler wrapped
-    // in a lazy initialiser, and `$B.brython` was undefined: the site built and
-    // answered 500. Imported where it is started, it runs before the start.
-    test("boot.js imports it", () => {
-        expect(read('boot.js')).toMatch(/^import 'bryve';$/m);
+describe('the engine comes started, before anything of Bryntime', () => {
+    // Left to a neighbour's import order, the engine once ran after its start
+    // in a production server build, and `$B.brython` was undefined: the site
+    // built and answered 500. Bryve starts it where it is imported, and the
+    // entry imports it first.
+    test('the entry imports it first', () => {
+        expect([...read('bryntime.js').matchAll(IMPORTS)][0][1]).toBe(ENGINE);
     });
 
-    test('and it is the module that calls brython(), and the only one', () => {
-        expect(modules().filter((file) => read(file).includes('$B.brython('))).toEqual(['boot.js']);
+    test('and no module of Bryntime starts it again', () => {
+        expect(modules().filter((file) => read(file).includes('$B.brython('))).toEqual([]);
     });
 
     // The half without the parsing chain is what a page gets, and the README
@@ -60,7 +60,7 @@ test('Bryntime imports the engine and itself, and nothing else', () => {
     );
 
     expect(modules()).toContain('bryntime.js');
-    expect(imports).toContain(`boot.js: ${ENGINE}`);
+    expect(imports).toContain(`bryntime.js: ${ENGINE}`);
     expect(imports.filter((one) => !one.endsWith(`: ${ENGINE}`) && !/: \.\/[\w-]+\.js$/.test(one))).toEqual([]);
 });
 

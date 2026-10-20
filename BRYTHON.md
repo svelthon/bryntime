@@ -31,11 +31,8 @@ function.
 
 ## Internals used
 
-### Boot
-
-| | |
-|---|---|
-| `$B.brython(options)` | starts the engine, in `boot.js`, the module that imports it |
+The engine comes started, from Bryve, which runs Brython outside the classic
+`<script>` it was written for, in a page or under Node.
 
 ### Namespaces and name resolution
 
@@ -192,24 +189,6 @@ type checks: `repr((1, 2))` raises *descriptor `__repr__` requires a 'tuple'
 object but received a 'tuple'*. This is why a host holds Python values raw,
 Svelte's `$state.raw` rather than a `$state` proxy, and a module publishes them
 through accessors.
-
-## Bootstrap outside a browser
-
-The engine is a classic browser script. To run it under Node, which a compiler
-does at build time and a server again for its rendering, four things must be in
-place **before** it is evaluated, and `globals.js` puts them there:
-
-```js
-globalThis.self ??= globalThis;           // touched by the bootstrap
-globalThis.addEventListener ??= () => {};
-globalThis.__BRYTHON__ ??= { brython_path: '<absolute URL>' };
-globalThis.$B ??= globalThis.__BRYTHON__; // the codegen's eval() resolves $B globally
-```
-
-`brython_path` must be pre-set because `document.currentScript` is `null` in an ES
-module, and it must be an **absolute URL** because `$B.strip_host` feeds it to
-`new URL()`. The `$B` global is required because the code generator builds its AST
-classes with `eval`, whose code resolves `$B` in global scope, not module scope.
 
 ## Rough edges worth smoothing
 
