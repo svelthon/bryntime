@@ -5,84 +5,176 @@
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Bryntime demo</title>
         <style>
-            body {
-                font: 16px/1.5 system-ui, sans-serif;
-                max-width: 64rem;
-                margin: 2rem auto;
-                padding: 0 1rem;
+            :root {
+                --bg: #f7f7f5;
+                --card: #ffffff;
+                --ink: #1d1d1f;
+                --muted: #6b6b70;
+                --line: #e2e2e0;
+                --accent: #3b5bdb;
+                --bad: #c92a2a;
+                --code: #f1f1ee;
+                --kw: #a626a4;
+                --str: #2b8a3e;
+                --num: #c2410c;
+                --fn: #1c7ed6;
+                --bi: #0c8599;
             }
-            /* The controls above the list and the copy beside it, so nothing
-               moves when the list grows or an error is shown. */
-            main {
-                display: grid;
-                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-                gap: 2rem;
-                align-items: start;
-            }
-            @media (max-width: 48rem) {
-                main {
-                    grid-template-columns: minmax(0, 1fr);
+            @media (prefers-color-scheme: dark) {
+                :root {
+                    --bg: #151517;
+                    --card: #1e1e21;
+                    --ink: #ececec;
+                    --muted: #9a9aa2;
+                    --line: #2e2e33;
+                    --accent: #7c9cff;
+                    --bad: #ff6b6b;
+                    --code: #18181b;
+                    --kw: #d291e4;
+                    --str: #8ce99a;
+                    --num: #ffa94d;
+                    --fn: #74c0fc;
+                    --bi: #66d9e8;
                 }
             }
-            ul {
-                padding: 0;
-            }
-            li {
-                list-style: none;
-            }
-            li button {
-                border: none;
-                background: none;
+            * { box-sizing: border-box; }
+            body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, sans-serif; }
+            main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
+            h1 { margin: 0 0 4px; font-size: 26px; }
+            .lead { margin: 0 0 20px; color: var(--muted); }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+            .column { display: grid; gap: 16px; min-width: 0; }
+            @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+            section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+            h2 { margin: 0 0 4px; font-size: 16px; }
+            .says { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+            code { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; }
+            button {
+                font: inherit;
+                font-size: 13px;
+                padding: 4px 10px;
+                border: 1px solid var(--line);
+                border-radius: 999px;
+                background: var(--code);
+                color: var(--ink);
                 cursor: pointer;
             }
-            #error {
-                color: #b00020;
-                min-height: 1.5em;
-                margin: 0.25rem 0 0;
+            .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px; }
+            .label { color: var(--muted); font-size: 13px; }
+            form { display: flex; gap: 8px; margin: 0; }
+            input[name='task'] {
+                flex: 1;
+                min-width: 0;
+                font: inherit;
+                padding: 6px 10px;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                background: var(--code);
+                color: var(--ink);
             }
+            #error { color: var(--bad); min-height: 1.5em; margin: 6px 0 4px; font-size: 14px; }
+            #todos { list-style: none; margin: 0 0 12px; padding: 0; border-top: 1px solid var(--line); }
+            #todos li { display: flex; align-items: center; gap: 8px; padding: 8px 2px; border-bottom: 1px solid var(--line); }
+            #todos li button { border: none; background: none; padding: 0 4px; font-size: 16px; color: var(--accent); }
+            #todos li button:last-child { margin-left: auto; color: var(--muted); }
+            #todos input { width: 16px; height: 16px; accent-color: var(--accent); }
+            dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; font-size: 14px; }
+            dt { color: var(--muted); }
+            dd { margin: 0; }
+            table { width: 100%; border-collapse: collapse; font-size: 14px; }
+            th, td { text-align: left; vertical-align: top; padding: 6px 8px; border-top: 1px solid var(--line); }
+            thead th { border-top: none; color: var(--muted); font-weight: 600; }
+            td:first-child { white-space: nowrap; }
             pre {
-                background: #f4f4f4;
-                padding: 0.75rem;
                 margin: 0;
-                max-height: 70vh;
+                font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+                background: var(--code);
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                padding: 12px;
+                max-height: 420px;
                 overflow: auto;
             }
+            .kw { color: var(--kw); }
+            .str { color: var(--str); }
+            .num { color: var(--num); }
+            .com { color: var(--muted); font-style: italic; }
+            .fn { color: var(--fn); }
+            .bi { color: var(--bi); }
         </style>
     </head>
     <body>
-        <h1>Bryntime</h1>
-        <p>
-            The tasks are instances of a Python class in a Python list, their tags a Python set, and the
-            filter a global of the Python module. JavaScript renders them as an array of objects and a
-            <code>Set</code>, writes into them, calls Python's functions, and is told of every change,
-            whichever side made it.
-        </p>
         <main>
-            <section>
-                <p>
-                    Show
-                    <button data-show="all">all</button>
-                    <button data-show="todo">to do</button>
-                    <button data-show="done">done</button>
-                    <span>(Python rebinds <code>show</code>)</span>
-                </p>
-                <form id="add">
-                    <input name="task" placeholder="A new task" />
-                    <button>Add, in Python</button>
-                    <p id="error"></p>
-                </form>
-                <p>
-                    <button id="clear-done">Clear done tasks: <code>del todos[i]</code></button>
-                    <button id="clear-all">Clear all: <code>todos = []</code></button>
-                </p>
-                <p><span id="left"></span> left, as Python's <code>remaining()</code> counts them.</p>
-                <ul id="todos"></ul>
-            </section>
-            <section>
-                <p>The same list, copied out for <code>JSON.stringify</code>:</p>
-                <pre id="json"></pre>
-            </section>
+            <h1>Bryntime</h1>
+            <p class="lead">The Brython runtime for JavaScript frameworks: Python's values read, written, called and followed from JavaScript.</p>
+
+            <div class="grid">
+                <div class="column">
+                    <section>
+                        <h2>The tasks</h2>
+                        <p class="says">
+                            A Python list of <code>Todo</code> instances, each with a Python <code>set</code> of tags, rendered by
+                            JavaScript through <code>viewOf(todos)</code>. Every change below is told by <code>track</code>, whichever
+                            side made it.
+                        </p>
+                        <form id="add">
+                            <input name="task" placeholder="A new task" aria-label="A new task" />
+                            <button>Add, in Python</button>
+                        </form>
+                        <p id="error"></p>
+                        <ul id="todos"></ul>
+                        <div class="row">
+                            <span class="label">Show</span>
+                            <button data-show="all">all</button>
+                            <button data-show="todo">to do</button>
+                            <button data-show="done">done</button>
+                        </div>
+                        <div class="row">
+                            <button id="clear-done">Clear done</button>
+                            <button id="clear-all">Clear all</button>
+                        </div>
+                        <dl>
+                            <dt>left</dt>
+                            <dd><span id="left"></span>, as Python's <code>remaining()</code> counts them</dd>
+                        </dl>
+                    </section>
+
+                    <section>
+                        <h2>Each move, and what it runs</h2>
+                        <p class="says">Python's values, written from JavaScript as Python writes them, and Python called from JavaScript.</p>
+                        <table>
+                            <thead>
+                                <tr><th>You</th><th>Runs</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>tick a box</td><td><code>todo.done = True</code>, written from JavaScript into the instance</td></tr>
+                                <tr><td>☆ a task</td><td><code>todo.tags.add("star")</code>, into the Python set</td></tr>
+                                <tr><td>× a task</td><td><code>del todos[i]</code>, from JavaScript, through the list's view</td></tr>
+                                <tr><td>Add</td><td><code>add(title)</code>, a Python function called from JavaScript; an empty title raises <code>ValueError</code></td></tr>
+                                <tr><td>Show</td><td><code>only(kind)</code>, which rebinds the global <code>show</code></td></tr>
+                                <tr><td>Clear done</td><td><code>del todos[index]</code>, in Python</td></tr>
+                                <tr><td>Clear all</td><td><code>todos = []</code>, a new list, followed in its turn</td></tr>
+                            </tbody>
+                        </table>
+                    </section>
+                </div>
+
+                <div class="column">
+                    <section>
+                        <h2>The Python module</h2>
+                        <p class="says">Compiled in the page and run in a namespace whose globals are JavaScript's cells (<code>bind</code>, <code>withNamespace</code>).</p>
+                        <pre id="python"></pre>
+                    </section>
+
+                    <section>
+                        <h2>Copied out</h2>
+                        <p class="says">The same list as plain data for <code>JSON.stringify</code> (<code>plainData</code>): the instances as objects, the sets as arrays.</p>
+                        <pre id="json"></pre>
+                    </section>
+                </div>
+            </div>
         </main>
+
         <!-- Served as it is, with no bundler: the engine is found where npm installed it. -->
         <script type="importmap">
             {

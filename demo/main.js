@@ -131,6 +131,62 @@ function render() {
 
 render();
 
+// The module, shown as written, coloured by the tokenizer of Python the
+// engine carries: no highlighting library, and no drift from the grammar.
+const escape = (text) => text.replace(/[&<>]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[char]);
+const KEYWORDS = new Set('False None True and as class def del for global if in is not raise return self'.split(' '));
+const BUILTINS = new Set('len range reversed set str sum ValueError'.split(' '));
+
+function coloured(code) {
+    const starts = [];
+    let offset = 0;
+    for (const line of code.split('\n')) {
+        starts.push(offset);
+        offset += line.length + 1;
+    }
+
+    let html = '';
+    let cursor = 0;
+    let previous = null;
+
+    try {
+        for (const token of $B.tokenizer(`${code}\n`, '<demo>', 'file')) {
+            if (token.type === 0 || token.type === 68) continue;
+
+            const from = starts[token.lineno - 1] + token.col_offset;
+            const to = Math.min(starts[token.end_lineno - 1] + token.end_col_offset, code.length);
+            if (from >= code.length) break;
+            if (from < cursor) continue;
+
+            const text = code.slice(from, to);
+            const cls =
+                token.type === 3
+                    ? 'str'
+                    : token.type === 2
+                      ? 'num'
+                      : token.type !== 1
+                        ? null
+                        : KEYWORDS.has(text)
+                          ? 'kw'
+                          : previous === 'def' || previous === 'class'
+                            ? 'fn'
+                            : BUILTINS.has(text)
+                              ? 'bi'
+                              : null;
+
+            html += escape(code.slice(cursor, from)) + (cls ? `<span class="${cls}">${escape(text)}</span>` : escape(text));
+            cursor = to;
+            if (token.string.trim()) previous = token.string;
+        }
+    } catch {
+        return escape(code);
+    }
+
+    return html + escape(code.slice(cursor));
+}
+
+document.querySelector('#python').innerHTML = coloured(SOURCE.trim());
+
 for (const button of document.querySelectorAll('[data-show]')) {
     button.onclick = () => only(button.dataset.show);
 }
