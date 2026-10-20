@@ -2,12 +2,11 @@
 // time never parses Python. A compiler that does takes the chain itself, so
 // what compiles pays for it and nothing else does.
 //
-// Imported here and not left to the order of whoever imports this. The engine
-// is a CommonJS file, so a bundler wraps it in a lazy initialiser and places
-// the call where the binding is used rather than where the import sits: read
-// from a neighbour, that call lands *after* this file and `$B.brython` is
-// undefined. Naming the dependency where it is needed is what keeps the order.
-import '../vendor/brython_runtime.js';
+// Imported here and not left to the order of whoever imports this: the engine
+// runs where it is imported, after `globals.js` and before the start below,
+// and naming the dependency where it is needed is what keeps the order. It is
+// Bryve's, Brython with its fixes.
+import 'bryve';
 
 // Initialise the engine once per page. `ipy_id: []` keeps brython() from
 // scanning the document for <script type="text/python">: the Python a page

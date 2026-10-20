@@ -6,8 +6,8 @@ shape of Brython's internals. This file is the contract, so that a Brython chang
 can be checked against it, and so that whoever reads `src/` knows which
 assumptions are load-bearing.
 
-Verified against the vendored engine, `$B.version_info == [3, 14, 0]`. What it
-carries on top of Brython's master is in `vendor/BRYTHON_FIX.md`.
+Verified against the vendored engine, Bryve, `$B.version_info == [3, 14, 0]`.
+What it carries on top of Brython's master is in Bryve's `BRYTHON_FIX.md`.
 
 ## The single point everything rests on
 
@@ -50,7 +50,7 @@ function.
 | `$B.$delete(name, locals, inum)` | what a real `del name` compiles to, `locals` being the namespace or `'global'`, the frame's globals then being `$B.frame_obj.frame[3]`; distinct from `$B.delete_for_reassign`, which precedes a rebinding. Wrapped so that deleting a name `bind` publishes makes it absent: its accessor answers `undefined`, which a `$proxy` namespace reads as no name, until the next write puts it back |
 | `$B.$is_member(item, container)` | what `in` compiles to; `"name" in namespace` may pass the namespace itself as `container`. Wrapped so that a deleted name is not in it |
 | `$B.builtins.globals`, `$B.builtins.locals` | what `globals()` and `locals()` call, `frame[3]` and `frame[1]` of the running frame. Wrapped so that for a namespace of ours both answer the same dict, a view of the namespace, as a module's `globals()` is its own dict |
-| `$B.resolve_in_scopes(name, namespaces, inum)` | the search of a name through namespaces then the builtins, `NameError` if none holds it; a read of a module global falls back on it when the namespace no longer holds the name, proposed upstream and vendored (see `vendor/BRYTHON_FIX.md`). Wrapped so that where the host says a read is an absence (`host.absent`), a name the module declares and has not bound reads as None |
+| `$B.resolve_in_scopes(name, namespaces, inum)` | the search of a name through namespaces then the builtins, `NameError` if none holds it; a read of a module global falls back on it when the namespace no longer holds the name, proposed upstream and vendored (see Bryve's `BRYTHON_FIX.md`). Wrapped so that where the host says a read is an absence (`host.absent`), a name the module declares and has not bound reads as None |
 | `$B.parse_kwargs(carrier, fname)` | the engine's reading of a call's keywords, explicit ones then each `**` mapping through `keys()` and `__getitem__`, a key given twice refused; `parseKeywords` reads them through it, as a Python function does |
 | `$B.KW` | the symbol a call's keyword arguments travel under, as a trailing `{[$B.KW]: [named, ...unpacked]}`; carried as a commit proposed upstream. `keywordsOf` and the JavaScript call adapter read it to tell keywords from an argument, which no Python dict or JavaScript object can pass for |
 | `$B.frame_obj` | read by `$B.$import`, null until a module body runs |
@@ -65,7 +65,7 @@ function.
 | `$B.builtins` | `str.$factory`, `bool.$factory`, `dict.$factory`, `set.$factory`, `list.$factory`, `repr`, `None`, `type` |
 | `$B.coroutine` | compared against `get_class` to spot a coroutine without calling `aio.iscoroutine` |
 | `$B.$call(callable, ...args)` | calls anything Python calls, a class object included, which is how a class handed to JavaScript is constructed |
-| `$B.pyobj2jsobj_hook(value, memo)` | an extension point `pyobj2jsobj` asks first, proposed upstream and vendored (see `vendor/BRYTHON_FIX.md`), which Bryntime sets so every Python callable the engine hands to JavaScript crosses as `pyHandler` publishes it, and every Python list, tuple or dict as a named import's arguments cross. `memo` is the one the engine keeps for the call, so a value passed twice is one object |
+| `$B.pyobj2jsobj_hook(value, memo)` | an extension point `pyobj2jsobj` asks first, proposed upstream and vendored (see Bryve's `BRYTHON_FIX.md`), which Bryntime sets so every Python callable the engine hands to JavaScript crosses as `pyHandler` publishes it, and every Python list, tuple or dict as a named import's arguments cross. `memo` is the one the engine keeps for the call, so a value passed twice is one object |
 | `$B.hasOnlyStringKeys(dict)` | whether a dict holds string keys only, all of them ordinary properties, read off its table's absence: a dict view looks a non-string key up by its name only when the dict holds one, so a read of a missing property on an ordinary dict costs no walk of its entries |
 | `$B.get_dict(obj)` | an object's attribute dict, the one `vars(obj)` hands back, or `undefined` for a value that has none, read off a slot with no Python code run: what `**` takes of an instance (`starredEntries`), and how it knows a value with neither entries nor attributes, to refuse it |
 | `$B.empty_dict()` | a new empty Python dict: the one the dict a module's `globals()` hands back stands on, and the one a dict's symbols are found on |
@@ -94,7 +94,7 @@ function.
 | `$B.NULL` | Brython's *absent*, which is not `None`: what `search_in_dict` gives back when the name is nowhere in that class |
 | a `str`'s storage | a JavaScript string; a `String` object carrying `ob_type` and `surrogates`, which `$B.String` makes of one holding a character past U+FFFF; or a subclass instance's `$brython_value`, one of the first two. `pyScalar` hands JavaScript the string itself whichever it is: `"🌍"` used to cross every boundary as an object, and JSON refused it |
 | `cls.tp_mro` | a class's method resolution order, starting at the class itself: `[cls, ...bases, object]`. What a lookup walks when it means *declared here or above*, and what says a subclass of `set` is a set |
-| `cls.noargs_methods` | the methods of a builtin type that take nothing but their receiver, as CPython flags them `METH_NOARGS`, proposed upstream and vendored (`noargs-method-arity`, see `vendor/BRYTHON_FIX.md`). Read for a builtin bound to its receiver, `rows.clear`, which then crosses to JavaScript as a callback handed nothing, as a `def` without parameters is |
+| `cls.noargs_methods` | the methods of a builtin type that take nothing but their receiver, as CPython flags them `METH_NOARGS`, proposed upstream and vendored (`noargs-method-arity`, see Bryve's `BRYTHON_FIX.md`). Read for a builtin bound to its receiver, `rows.clear`, which then crosses to JavaScript as a callback handed nothing, as a `def` without parameters is |
 | `f.ml.ml_name`, `f.m_self` | a builtin bound to its receiver, `rows.clear` or `"hello".upper`: the method's name and the receiver, which `method_descriptor.tp_descr_get` puts on the function it hands out |
 | `f.__text_signature__` | the text signature a builtin carries, `($self, /, *, key=None, reverse=False)` for `list.sort`, copied onto the bound method by `tp_descr_get`, proposed upstream and vendored (`list-sort-keyword-only`). One with no positional parameter makes the bound method a callback handed nothing, as `noargs_methods` does |
 | `$B.class_name(obj)` | the name Python prints for a value's class, `range` or `complex`, which is what a refusal has to say when it has nothing else: the serialiser's message names the class of the value rather than accusing the value of being one |

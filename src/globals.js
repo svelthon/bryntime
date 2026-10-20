@@ -1,10 +1,11 @@
-// Brython is a classic browser script, loaded here as an ES module. Two things
-// differ in that context and both must be settled *before* brython.js runs,
-// hence a separate module, since ES imports are hoisted above statements.
+// Brython was written as a classic browser script, and runs here as an ES
+// module. Two things differ in that context and both must be settled *before*
+// brython.js runs, hence a separate module, since ES imports are hoisted above
+// statements.
 //
 //  - `document.currentScript` is null in a module, and brython.js dereferences
 //    it to derive its own install path. Setting brython_path skips that branch
-//    (build/brython.js:38).
+//    (brython.js, where it reads `document.currentScript`).
 //  - the codegen builds its AST classes with eval(), whose code resolves `$B`
 //    in *global* scope; a module-scoped binding would be invisible to it.
 // Server-side rendering runs this same module under Node, where the bootstrap
@@ -33,7 +34,7 @@ globalThis.$B.$bryntimeGlobalsBefore ??= new Set(Object.getOwnPropertyNames(glob
 
 // brython.js splits itself in two at load time and picks a half from the process
 // alone: `isNode = typeof process !== 'undefined' && process.release.name ===
-// 'node'` (build/brython.js:16). The browser half is what builds `browser.html`,
+// 'node'` (brython.js, at `isNode`). The browser half is what builds `browser.html`,
 // the module `$B.get_class` reads to give a DOM node its Python class; the Node
 // half never defines it, and `node.value` from Python then dies inside
 // `get_dict` on an undefined module.

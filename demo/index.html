@@ -83,6 +83,15 @@
                 <pre id="json"></pre>
             </section>
         </main>
+        <!-- Served as it is, with no bundler: the engine is found where npm installed it. -->
+        <script type="importmap">
+            {
+                "imports": {
+                    "bryve": "../node_modules/bryve/brython_runtime.js",
+                    "bryve/compiler": "../node_modules/bryve/brython_compiler.js"
+                }
+            }
+        </script>
         <script type="module" src="./main.js"></script>
     </body>
 </html>

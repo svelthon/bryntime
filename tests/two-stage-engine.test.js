@@ -9,7 +9,7 @@
 // flag: a site ships `brython_runtime.js`, and only what compiles pays for
 // `brython_compiler.js`.
 //
-// This file loads the two vendored halves directly rather than through
+// This file loads Bryve's two halves directly rather than through
 // `bryntime.js`, which boots the engine.
 import { test, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -23,14 +23,14 @@ import { readFileSync } from 'node:fs';
 // with a failure, so a file must not manufacture one.
 test('the runtime half has no parser, gains one, and compiles Python through it', async () => {
     await import('../src/globals.js');
-    await import('../vendor/brython_runtime.js');
+    await import('bryve');
 
     const $B = globalThis.__BRYTHON__;
     expect(typeof $B.Parser).toBe('undefined');
 
     // Indirect eval: the block is a script, not a module, and this is what a
     // plugin would do with it.
-    (0, eval)(readFileSync('vendor/brython_compiler.js', 'utf8'));
+    (0, eval)(readFileSync('node_modules/bryve/brython_compiler.js', 'utf8'));
 
     expect(typeof $B.Parser).toBe('function');
 

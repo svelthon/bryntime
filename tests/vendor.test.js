@@ -6,15 +6,15 @@ import { runInNewContext, runInThisContext } from 'node:vm';
 
 import { test, expect, describe, vi } from 'vitest';
 import '../src/bryntime.js';
-import '../vendor/brython_compiler.js';
+import 'bryve/compiler';
 import * as deleteOrder from './fixtures/delete_order.py';
 import * as strKeywords from './fixtures/str_keywords.py';
 import * as jsonText from './fixtures/json_text.py';
 import * as deletedGlobal from './fixtures/deleted_global.py';
 import * as templateStrings from './fixtures/template_strings.py';
 
-// Behaviours of the vendored Brython that Bryntime rests on, each observable,
-// so a build that loses one turns a test red rather than a page. The first
+// Behaviours of the vendored Brython, Bryve, that Bryntime rests on, each
+// observable, so a build that loses one turns a test red rather than a page. The first
 // group is upstream; then come the commits still waiting there, which a
 // re-vendoring from plain master drops; the integer format and the `__call__`
 // binding are edits made in the built file, which every re-vendoring drops.
@@ -204,7 +204,7 @@ describe('the vendored Brython carries its repairs', () => {
     // like the stronger test and was the emptier one — the text is not in that
     // function at all, so the assertion could not have failed.
     test('the identifier rule is one function, not one per site', () => {
-        const source = readFileSync('vendor/brython_runtime.js', 'utf8');
+        const source = readFileSync('node_modules/bryve/brython_runtime.js', 'utf8');
 
         expect($B.scope_name("O'Brien")).toBe('O_Brien');
         expect($B.scope_name('a.b')).toBe('a_b');
@@ -477,7 +477,7 @@ describe('the vendored Brython carries its repairs', () => {
     // here, so this is the real collision rather than a stand-in.
     test('a second execution is refused', () => {
         const before = $B.builtins;
-        const file = resolve(import.meta.dirname, '../vendor/brython_runtime.js');
+        const file = resolve(import.meta.dirname, '../node_modules/bryve/brython_runtime.js');
 
         runInThisContext(readFileSync(file, 'utf8'), { filename: file });
 
@@ -496,7 +496,7 @@ describe('the vendored Brython carries its repairs', () => {
         // Relative to the working directory, not to `import.meta.url`: this
         // file runs under jsdom, where that is an http URL and `readFileSync`
         // refuses it. The other source-reading tests are node-environment.
-        const source = readFileSync('vendor/brython_runtime.js', 'utf8');
+        const source = readFileSync('node_modules/bryve/brython_runtime.js', 'utf8');
 
         expect(source.match(/@vite-ignore/g)).toHaveLength(2);
         expect(source).toContain('import(/* @vite-ignore */ ref)');

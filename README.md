@@ -67,7 +67,7 @@ A compiler loads Brython's other half onto the same engine:
 
 ```js
 import 'bryntime';
-import 'bryntime/compiler';
+import 'bryve/compiler';
 ```
 
 ## Demo
@@ -92,19 +92,13 @@ cannot drift from the API it shows.
 
 ## The engine
 
-Bryntime runs on Brython's engine, in `vendor/`, built from Brython's master
-and the repairs proposed there and not merged yet, one commit each. It carries
-**four** edits made in the file itself, each held by a test: a guard against a
-second execution in one process, `/* @vite-ignore */` on the two dynamic
-imports, CPython's order for an int formatted with a base prefix, and the
-binding of a `__call__` that is not a function. `vendor/BRYTHON_FIX.md` lists
-them all. They live in the file rather than in a build step, because Node loads
-the same copy, for a compiler and for a server's rendering, so a patch applied
-only while serving would leave both on an unrepaired engine.
+Bryntime runs on Bryve, its peer dependency: Brython's master and the repairs
+proposed there and not merged yet, one commit each, as an ES module. Bryve's
+`BRYTHON_FIX.md` lists them all, with the edits made in the file itself, and
+the tests here hold each repair Bryntime rests on.
 
-A page loads `vendor/brython_runtime.js`, the half without the parsing chain:
-**224 KB** gzipped. The full bundle it is cut from is 275 KB and never ships; a
-compiler adds the other half through `bryntime/compiler`.
+A page loads `bryve`, the half without the parsing chain: **224 KB** gzipped. A
+compiler adds the other half, `bryve/compiler`.
 
 What Bryntime asks of the engine, member by member, is in `BRYTHON.md`.
 

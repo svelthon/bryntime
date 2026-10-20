@@ -21,21 +21,23 @@
   "main": "./src/bryntime.js",
   "exports": {
     ".": "./src/bryntime.js",
-    "./compiler": "./vendor/brython_compiler.js",
     "./package.json": "./package.json"
   },
   "files": [
     "BRYTHON.md",
     "demo",
-    "src",
-    "vendor"
+    "src"
   ],
   "scripts": {
     "test": "vitest run",
     "coverage": "vitest run --coverage --coverage.include='src/**'"
   },
+  "peerDependencies": {
+    "bryve": "^0.1.0"
+  },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.12",
+    "bryve": "file:../bryve",
     "jsdom": "^29.1.1",
     "vitest": "^4.1.12"
   }

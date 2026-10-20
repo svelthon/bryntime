@@ -12,7 +12,7 @@ import { host, pyData, plainData, entering, pyBind, refused, NONE } from '../src
 
 const at = (path) => new URL(`../${path}`, import.meta.url);
 const ENTRY = JSON.parse(readFileSync(at('package.json'), 'utf8')).exports['.'];
-const ENGINE = '../vendor/brython_runtime.js';
+const ENGINE = 'bryve';
 const IMPORTS = /^(?:import|export)\s+(?:[^'";]*\s+from\s+)?'([^']+)';/gm;
 const read = (file) => readFileSync(at(`src/${file}`), 'utf8');
 
@@ -32,13 +32,12 @@ const modules = () => {
 };
 
 describe('the engine is imported where it is started', () => {
-    // The engine is a CommonJS file, so a bundler wraps it in a lazy
-    // initialiser and places the call where the binding is used, not where the
-    // import sits. Left to a neighbour's import order, that call lands after
-    // `boot.js` in a production server build and `$B.brython` is undefined:
-    // the site builds and answers 500.
+    // Left to a neighbour's import order, the engine ran after `boot.js` in a
+    // production server build, while it was a CommonJS file a bundler wrapped
+    // in a lazy initialiser, and `$B.brython` was undefined: the site built and
+    // answered 500. Imported where it is started, it runs before the start.
     test("boot.js imports it", () => {
-        expect(read('boot.js')).toMatch(/^import '\.\.\/vendor\/brython_runtime\.js';$/m);
+        expect(read('boot.js')).toMatch(/^import 'bryve';$/m);
     });
 
     test('and it is the module that calls brython(), and the only one', () => {
@@ -48,7 +47,7 @@ describe('the engine is imported where it is started', () => {
     // The half without the parsing chain is what a page gets, and the README
     // states its weight.
     test('the README states the size of the engine a page loads', () => {
-        const size = Math.round(gzipSync(readFileSync(at('vendor/brython_runtime.js'))).length / 1024);
+        const size = Math.round(gzipSync(readFileSync(at('node_modules/bryve/brython_runtime.js'))).length / 1024);
         const stated = Number(readFileSync(at('README.md'), 'utf8').match(/\*\*(\d+) KB\*\* gzipped/)[1]);
 
         expect(stated).toBe(size);

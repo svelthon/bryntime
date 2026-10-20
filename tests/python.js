@@ -3,7 +3,7 @@
 // handed over as a host's export is (`pyExport`), a name it does not hold as
 // undefined. And Python run for a test's own values, read as Python holds them.
 import { bind, pyExport, withNamespace } from '../src/bryntime.js';
-import '../vendor/brython_compiler.js';
+import 'bryve/compiler';
 
 const MISSING = {};
 let runs = 0;
