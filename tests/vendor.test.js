@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
+import { resolve } from 'node:path';
 import v8 from 'node:v8';
-import { runInNewContext } from 'node:vm';
+import { runInNewContext, runInThisContext } from 'node:vm';
 
 import { test, expect, describe, vi } from 'vitest';
 import '../src/bryntime.js';
+import '../vendor/brython_compiler.js';
 import * as deleteOrder from './fixtures/delete_order.py';
 import * as strKeywords from './fixtures/str_keywords.py';
 import * as jsonText from './fixtures/json_text.py';
@@ -465,20 +466,20 @@ describe('the vendored Brython carries its repairs', () => {
         expect($B.pyobj2jsobj(made)).toEqual({ $kw: ['a'] });
     });
 
-    // Under Node the compiler loads the file with `require()` and a
-    // server-rendered component imports it again, which are two module
-    // instances; the wrapper skips the body on the second. Local, and it would
-    // be wrong upstream: a browser loads the script once per page, so the guard
+    // Under Node one process can load the file twice, as two module instances
+    // of it; the wrapper skips the body on the second. Local, and it would be
+    // wrong upstream: a browser loads the script once per page, so the guard
     // protects nothing there while changing the shape of the file for everyone.
     //
-    // Loading it again is what the test does, so the sentinel is read for what
+    // Running it again is what the test does, so the sentinel is read for what
     // it is: the same `$B` object has to come back, not a rebuilt one. The file
-    // asked for is the one the package ships, which is also the one already
-    // loaded here, so this is the real collision rather than a stand-in.
+    // run is the one the package ships, which is also the one already loaded
+    // here, so this is the real collision rather than a stand-in.
     test('a second execution is refused', () => {
         const before = $B.builtins;
+        const file = resolve(import.meta.dirname, '../vendor/brython_runtime.js');
 
-        createRequire(import.meta.url)('../vendor/brython_runtime.js');
+        runInThisContext(readFileSync(file, 'utf8'), { filename: file });
 
         expect(globalThis.__BRYTHON__).toBe($B);
         expect(globalThis.__BRYTHON__.builtins).toBe(before);
@@ -588,7 +589,6 @@ test.for([
 // after it, a character short of the `!`, the `:` or the `}`: CPython's
 // positions for `f"{x = !s}"`, which the template reads the label by.
 test('debug f-strings as CPython places them: fstring-debug-label-end', () => {
-    createRequire(import.meta.url)('../vendor/brython_compiler.js');
     const $B = globalThis.__BRYTHON__;
     const tree = $B._PyPegen.run_parser(new $B.Parser('f"{x = !s}"\n', '<guard>', 'file'));
     const [label] = tree.body[0].value.values[0].values;
@@ -1090,7 +1090,6 @@ test('a class refuses the bases and slots CPython refuses, and keeps a redeclare
 // A page's runtime has no parser, so this runs in the engine the compiler
 // loads; `python3` on the same lines prints the answers.
 test('code from compile() runs where its tree leaves a field out: compile-ast-optional-none', () => {
-    createRequire(import.meta.url)('../vendor/brython_compiler.js');
     const $B = globalThis.__BRYTHON__;
     const program = [
         'SOURCES = [',

@@ -2,10 +2,8 @@
 // Brython's own compiler, which this file loads, and each name the module holds
 // handed over as a host's export is (`pyExport`), a name it does not hold as
 // undefined. And Python run for a test's own values, read as Python holds them.
-import { createRequire } from 'node:module';
 import { bind, pyExport, withNamespace } from '../src/bryntime.js';
-
-createRequire(import.meta.url)('../vendor/brython_compiler.js');
+import '../vendor/brython_compiler.js';
 
 const MISSING = {};
 let runs = 0;
