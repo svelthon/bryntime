@@ -207,6 +207,26 @@ def grow():
         expect(count).toBe(0);
     });
 
+    // And for good: a write made after, by a cleanup that rebinds a name to a
+    // shared list, signed the owner onto it again, where no later unsubscribe
+    // would take it off.
+    test('and an owner that let go signs onto nothing again', () => {
+        const read = python(`
+rows = [1]
+def grow():
+    rows.append(0)
+`);
+        const owner = [];
+        let count = 0;
+        const bump = () => (count += 1);
+
+        unsubscribe(owner);
+        track(read('rows'), bump, owner);
+        $B.$call(read('grow'));
+        expect(count).toBe(0);
+        expect(owner).toEqual([]);
+    });
+
     test('follow hands back the value it is given, a scalar as it is', () => {
         const rows = python('value = [1]')('value');
 

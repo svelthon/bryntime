@@ -2396,10 +2396,17 @@ const viewed = (value) => {
     return undefined;
 };
 
+// The owners that let go (`unsubscribe`): their component is over, and nothing
+// signs onto one of them again.
+const CLOSED = new WeakSet();
+
 // Sign one subscriber onto one marker, and tell `owner` about it so the same
 // subscriber can sign off. `owner` is the component's list; a store has none,
-// since its subscription lives as long as the module does.
+// since its subscription lives as long as the module does. A closed owner signs
+// nobody: a write made after the component let go, by a cleanup of the
+// author's, would otherwise sign it again, for ever.
 const join = (marker, bump, owner) => {
+    if (owner !== undefined && CLOSED.has(owner)) return;
     if (marker.bumps.includes(bump)) return;
 
     marker.bumps.push(bump);
@@ -2471,6 +2478,7 @@ export function unsubscribe(owner) {
     for (let i = 0; i < owner.length; i += 2) leave(owner[i], owner[i + 1]);
 
     owner.length = 0;
+    CLOSED.add(owner);
 }
 
 // What the name held before this write loses its subscription, or a mutation of
